@@ -1,0 +1,1164 @@
+<meta charset="utf-8">
+<title>Second-Order Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-bench workbook. Sticky tab strip, controls column + instrument panels (scope, s-plane, Bode), worked solution below. */
+:root {
+  --bg: #e9eef0;
+  --surface: #ffffff;
+  --surface-2: #f4f7f8;
+  --ink: #15212b;
+  --muted: #5a6a76;
+  --line: #cfd8de;
+  --grid: #e3e9ec;
+  --accent: #1f4fb8;
+  --accent-soft: #dbe5f8;
+  --over: #0d7f74;
+  --crit: #a86a06;
+  --under: #b4285f;
+  --c-energy: #1f4fb8;
+  --l-energy: #a86a06;
+  --r-energy: #b4285f;
+  --pin1: #8b98a3; --pin2: #6f9a8f; --pin3: #a58c6c;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --surface: #151d23; --surface-2: #1a242b; --ink: #e2eaef; --muted: #91a2ae;
+    --line: #2a3741; --grid: #1f2a31; --accent: #7aa7ff; --accent-soft: #1d2c47;
+    --over: #3cc2b0; --crit: #f0b545; --under: #f06d9e;
+    --c-energy: #7aa7ff; --l-energy: #f0b545; --r-energy: #f06d9e;
+    --pin1: #6d7b86; --pin2: #4f8478; --pin3: #8e7757;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --surface: #151d23; --surface-2: #1a242b; --ink: #e2eaef; --muted: #91a2ae;
+  --line: #2a3741; --grid: #1f2a31; --accent: #7aa7ff; --accent-soft: #1d2c47;
+  --over: #3cc2b0; --crit: #f0b545; --under: #f06d9e;
+  --c-energy: #7aa7ff; --l-energy: #f0b545; --r-energy: #f06d9e;
+  --pin1: #6d7b86; --pin2: #4f8478; --pin3: #8e7757;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 1280px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding-block: 22px 10px; }
+header.top h1 { font-size: 1.9rem; font-weight: 600; letter-spacing: -0.01em; }
+header.top p { margin: 0; color: var(--muted); }
+.course { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 18px; scrollbar-width: none; }
+nav.tabs a { font-family: var(--font-display); font-weight: 500; font-size: 1rem; color: var(--muted); text-decoration: none; padding: 10px 14px; border-bottom: 3px solid transparent; white-space: nowrap; }
+nav.tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+nav.tabs a:hover { color: var(--ink); }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; min-width: 0; }
+.card h3 { font-size: 1.05rem; font-weight: 600; }
+.card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin-bottom: 6px; }
+.sub { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.note { color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* explorer */
+.ex-grid { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ex-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 960px) { .ex-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 720px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.controls { display: grid; gap: 12px; }
+.field { display: grid; gap: 4px; }
+.field > label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+select, input[type="number"] { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; width: 100%; }
+.schem { background: var(--surface-2); border-radius: 8px; padding: 6px; overflow-x: auto; }
+.schem svg { display: block; width: 100%; height: auto; min-width: 280px; }
+.schem .w { fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.schem .node { fill: var(--ink); }
+.schem .lbl { fill: var(--ink); font: 600 12px var(--font-body); }
+.schem .val { fill: var(--accent); font: 500 11.5px var(--font-mono); }
+.schem .sm { fill: var(--muted); font: 500 10.5px var(--font-body); }
+.schem .src { fill: var(--surface); stroke: var(--ink); stroke-width: 1.8; }
+.schem .arrowfill { fill: var(--ink); }
+.cdesc { margin: 0; font-size: 0.9rem; }
+.slide-tag { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.chipbtn { font: 500 0.82rem var(--font-body); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chipbtn:hover { border-color: var(--accent); }
+.chipbtn .sw { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.prow { display: grid; grid-template-columns: 44px minmax(0, 1fr) 104px; align-items: center; gap: 10px; }
+.prow label { font-weight: 600; font-size: 0.95rem; }
+.prow .pval { display: flex; align-items: center; gap: 4px; }
+.prow .pval input { padding: 4px 6px; font-family: var(--font-mono); font-size: 0.85rem; }
+.prow .unit { font-size: 0.8rem; color: var(--muted); min-width: 22px; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.readout { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.casechip { display: flex; flex-direction: column; justify-content: center; padding: 8px 14px; border-radius: var(--r); color: var(--surface); min-width: 170px; }
+.casechip b { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; line-height: 1.15; }
+.casechip span { font-size: 0.8rem; opacity: 0.92; }
+.case-over { background: var(--over); } .case-critical { background: var(--crit); } .case-under { background: var(--under); }
+.kv { display: flex; flex-direction: column; justify-content: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 12px; min-width: 92px; }
+.kv .k { font-size: 0.74rem; color: var(--muted); }
+.kv .v { font-family: var(--font-mono); font-size: 0.95rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.toggles { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.82rem; color: var(--muted); align-items: center; }
+.toggles label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+.btn { font: 600 0.82rem var(--font-body); border: 1px solid var(--accent); background: var(--accent); color: var(--surface); border-radius: 7px; padding: 5px 12px; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.plot-host { position: relative; width: 100%; min-width: 0; touch-action: pan-y; }
+.plot-host svg { display: block; }
+.plot .gl { stroke: var(--grid); stroke-width: 1; }
+.plot .ax { stroke: var(--muted); stroke-width: 1; }
+.plot .tk { fill: var(--muted); font: 11px var(--font-mono); }
+.plot .al { fill: var(--muted); font: 500 12px var(--font-body); }
+.plot .ann { font: 500 11px var(--font-body); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: 12px var(--font-mono); white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 2; }
+.tip div { display: flex; gap: 8px; justify-content: space-between; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 18px; height: 0; border-top: 2.5px solid; vertical-align: middle; margin-right: 5px; }
+.legend i.dash { border-top-style: dashed; }
+.legend i.dot { border-top-style: dotted; }
+
+.steps ol { margin: 8px 0 0; padding-left: 0; list-style: none; counter-reset: st; display: grid; gap: 12px; }
+.steps li { counter-increment: st; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+.steps li::before { content: counter(st); font: 600 0.9rem var(--font-mono); color: var(--accent); background: var(--accent-soft); border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; }
+.steps h4 { margin: 2px 0 4px; font-size: 0.95rem; font-family: var(--font-display); font-weight: 600; }
+.steps p { margin: 0 0 4px; max-width: 78ch; }
+.eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--surface-2); border-radius: 6px; padding: 6px 10px; margin: 4px 0; overflow-x: auto; white-space: nowrap; }
+.eq.final { border-left: 3px solid var(--accent); font-weight: 500; }
+sup, sub { font-size: 0.72em; }
+
+/* s-plane tab */
+.sp-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; }
+@media (max-width: 900px) { .sp-grid { grid-template-columns: minmax(0, 1fr); } }
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.forms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .forms { grid-template-columns: minmax(0, 1fr); } }
+.form-card { border-top: 4px solid; }
+.form-card.over { border-top-color: var(--over); } .form-card.critical { border-top-color: var(--crit); } .form-card.under { border-top-color: var(--under); }
+.form-card h3 { margin-bottom: 4px; }
+.form-card p { margin: 4px 0; font-size: 0.88rem; }
+.sp-drag { cursor: grab; }
+
+/* energy tab */
+.en-grid { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .en-grid { grid-template-columns: minmax(0, 1fr); } }
+canvas#msd { width: 100%; height: 190px; display: block; background: var(--surface-2); border-radius: 8px; }
+.bars { display: grid; gap: 8px; margin-top: 10px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 76px; gap: 10px; align-items: center; font-size: 0.85rem; }
+.bar .track { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; width: 0; border-radius: 4px; }
+.bar .num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .bar { grid-template-columns: 100px minmax(0, 1fr) 64px; } }
+table.analogy { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+table.analogy th, table.analogy td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+table.analogy th { font-weight: 600; color: var(--muted); font-size: 0.78rem; }
+.playrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* quiz */
+.qz-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .qz-grid { grid-template-columns: minmax(0, 1fr); } }
+.answers { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.answers button { font: 600 0.95rem var(--font-display); padding: 9px 16px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.answers button[data-case="over"]:hover { border-color: var(--over); }
+.answers button[data-case="critical"]:hover { border-color: var(--crit); }
+.answers button[data-case="under"]:hover { border-color: var(--under); }
+.answers button.picked-right { background: var(--over); border-color: var(--over); color: var(--surface); }
+.answers button.picked-wrong { background: var(--under); border-color: var(--under); color: var(--surface); }
+.score { font-family: var(--font-mono); font-size: 0.9rem; color: var(--muted); }
+.verdict { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; margin: 0 0 6px; }
+[hidden] { display: none !important; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="course">ENEB 302 · Analog Circuits</div>
+      <h1>Second-Order Lab</h1>
+    </div>
+    <p>Change R, L and C and watch the roots, the transient and the frequency response move together.</p>
+  </header>
+  <nav class="tabs" aria-label="Views">
+    <a href="#explorer" data-view="explorer">Circuit explorer</a>
+    <a href="#splane" data-view="splane">Poles &amp; damping</a>
+    <a href="#energy" data-view="energy">Where the energy goes</a>
+    <a href="#quiz" data-view="quiz">Damping quiz</a>
+  </nav>
+
+  <!-- ========== EXPLORER ========== -->
+  <section class="view" id="view-explorer">
+    <div class="ex-grid">
+      <aside class="card controls">
+        <div class="field">
+          <label for="circuit">Circuit from the slides</label>
+          <select id="circuit"></select>
+        </div>
+        <p class="cdesc"><span class="slide-tag" id="cslide"></span> <span id="cdesc"></span></p>
+        <div class="schem" id="schem"></div>
+        <div class="field">
+          <label>Presets</label>
+          <div class="presets" id="presets"></div>
+        </div>
+        <div id="params" class="controls"></div>
+        <div class="field">
+          <label for="outsel">Solve for</label>
+          <select id="outsel"></select>
+        </div>
+      </aside>
+      <div class="ex-main">
+        <div class="readout" id="readout"></div>
+        <div class="card">
+          <div class="card-h">
+            <h3>Time response</h3>
+            <div class="toggles">
+              <label><input type="checkbox" id="tg-forced" checked> forced part</label>
+              <label><input type="checkbox" id="tg-natural"> natural part</label>
+              <label><input type="checkbox" id="tg-env" checked> envelope</label>
+              <label><input type="checkbox" id="tg-slope" checked> initial slope</label>
+              <button class="btn ghost" id="pin">Pin trace</button>
+              <button class="btn ghost" id="unpin" disabled>Clear pins</button>
+            </div>
+          </div>
+          <div class="plot-host" id="p-time"></div>
+          <div class="legend" id="leg-time"></div>
+        </div>
+        <div class="two">
+          <div class="card">
+            <div class="card-h"><h3>Roots in the s-plane</h3></div>
+            <div class="plot-host" id="p-s"></div>
+            <p class="note" id="s-note"></p>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Frequency response</h3><span class="sub" id="h-label"></span></div>
+            <div class="plot-host" id="p-mag"></div>
+            <div class="plot-host" id="p-ph"></div>
+            <p class="note" id="bode-note"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card steps" style="margin-top:16px">
+      <div class="card-h"><h3>Worked solution, following the slide algorithm</h3><span class="sub">Updates live with the values above</span></div>
+      <ol id="steps"></ol>
+    </div>
+  </section>
+
+  <!-- ========== S-PLANE ========== -->
+  <section class="view" id="view-splane" hidden>
+    <div class="sp-grid">
+      <div class="card">
+        <div class="card-h"><h3>Drag the pole</h3><span class="sub">Distance from origin = ω₀ · angle sets ζ</span></div>
+        <div class="plot-host" id="sp-plane"></div>
+        <div class="controls" style="margin-top:10px">
+          <div class="prow"><label for="sp-z">ζ</label><input type="range" id="sp-z-r" min="0" max="300" step="1"><span class="pval"><input type="number" id="sp-z" step="0.01" min="0"><span class="unit"></span></span></div>
+          <div class="prow"><label for="sp-w">ω₀</label><input type="range" id="sp-w-r" min="30" max="400" step="1"><span class="pval"><input type="number" id="sp-w" step="0.01" min="0.1"><span class="unit">rad/s</span></span></div>
+        </div>
+        <p class="note">Dragging keeps ζ ≤ 1. Use the ζ slider to push the poles onto the real axis (overdamped). ζ = 0 puts them on the jω axis: no resistance, endless ringing.</p>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <h3>Step response</h3>
+          <div class="toggles"><label><input type="checkbox" id="sp-ghost" checked> show ζ family</label></div>
+        </div>
+        <div class="plot-host" id="sp-step"></div>
+        <div class="metrics" id="sp-metrics" style="margin-top:10px"></div>
+        <p class="note" id="sp-rlc"></p>
+      </div>
+    </div>
+    <div class="forms" style="margin-top:16px">
+      <div class="card form-card over"><h3>Overdamped · ζ &gt; 1</h3>
+        <p>α &gt; ω₀. Two distinct real roots s<sub>±</sub> = −α ± √(α² − ω₀²).</p>
+        <div class="eq">y<sub>h</sub>(t) = A e<sup>s₊t</sup> + B e<sup>s₋t</sup></div>
+        <p>Slow and sluggish. The root nearer the origin sets how long it takes.</p></div>
+      <div class="card form-card critical"><h3>Critically damped · ζ = 1</h3>
+        <p>α = ω₀. One repeated real root s = −α.</p>
+        <div class="eq">y<sub>h</sub>(t) = A e<sup>st</sup> + B t e<sup>st</sup></div>
+        <p>The fastest response that never overshoots.</p></div>
+      <div class="card form-card under"><h3>Underdamped · ζ &lt; 1</h3>
+        <p>α &lt; ω₀. Complex roots −α ± jω<sub>d</sub>, with ω<sub>d</sub> = √(ω₀² − α²).</p>
+        <div class="eq">y<sub>h</sub>(t) = e<sup>−αt</sup>(A cos ω<sub>d</sub>t + B sin ω<sub>d</sub>t)</div>
+        <p>Rings at ω<sub>d</sub> inside a decaying e<sup>−αt</sup> envelope and overshoots.</p></div>
+    </div>
+  </section>
+
+  <!-- ========== ENERGY ========== -->
+  <section class="view" id="view-energy" hidden>
+    <div class="en-grid">
+      <aside class="card controls">
+        <div>
+          <div class="eyebrow">Series RLC · slides 3–11</div>
+          <p class="cdesc" style="margin-top:4px">Same circuit as the series examples. At t = 0 the capacitor holds ½CV₀² and the inductor holds ½L·i<sub>L</sub>(0)². After that the energy sloshes between C and L, and R turns some into heat on every pass.</p>
+        </div>
+        <div class="presets" id="en-presets"></div>
+        <div id="en-params" class="controls"></div>
+        <label for="en-slideic" style="font-size:0.85rem;color:var(--muted);display:flex;gap:6px;align-items:baseline"><input type="checkbox" id="en-slideic"><span>Use the slides' initial current, i<sub>L</sub>(0) = V₀/R. Untick to start with only the capacitor charged.</span></label>
+        <table class="analogy">
+          <thead><tr><th>Circuit</th><th>Mass–spring–damper</th></tr></thead>
+          <tbody>
+            <tr><td>charge q = Cv<sub>C</sub></td><td>position x</td></tr>
+            <tr><td>current i</td><td>velocity v</td></tr>
+            <tr><td>inductance L</td><td>mass m</td></tr>
+            <tr><td>1/C</td><td>spring stiffness k</td></tr>
+            <tr><td>resistance R</td><td>damping b</td></tr>
+            <tr><td>½Cv<sub>C</sub>² (electric field)</td><td>½kx² (spring)</td></tr>
+            <tr><td>½Li² (magnetic field)</td><td>½mv² (motion)</td></tr>
+          </tbody>
+        </table>
+      </aside>
+      <div class="ex-main">
+        <div class="card">
+          <div class="card-h">
+            <h3>Mechanical twin</h3>
+            <div class="playrow">
+              <button class="btn" id="en-play">Play</button>
+              <button class="btn ghost" id="en-reset">Restart</button>
+              <label class="toggles" for="en-speed">speed <input type="range" id="en-speed" min="0.25" max="3" step="0.25" value="1" style="width:90px"></label>
+            </div>
+          </div>
+          <canvas id="msd" aria-label="Animated mass, spring and damper that mirrors the circuit"></canvas>
+          <div class="bars" id="en-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Energy over time</h3><span class="sub" id="en-time"></span></div>
+          <div class="plot-host" id="en-plot"></div>
+          <div class="legend">
+            <span><i style="border-color:var(--c-energy)"></i>stored in C</span>
+            <span><i style="border-color:var(--l-energy)"></i>stored in L</span>
+            <span><i style="border-color:var(--r-energy)"></i>burned in R (running total)</span>
+          </div>
+          <p class="note" id="en-note"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== QUIZ ========== -->
+  <section class="view" id="view-quiz" hidden>
+    <div class="qz-grid">
+      <div class="card">
+        <div class="card-h"><h3>Which damping case?</h3><span class="score" id="qz-score">0 / 0</span></div>
+        <p class="sub" id="qz-prompt"></p>
+        <div class="schem" id="qz-schem" style="margin-top:8px"></div>
+        <div class="answers" id="qz-answers">
+          <button data-case="over">Overdamped</button>
+          <button data-case="critical">Critically damped</button>
+          <button data-case="under">Underdamped</button>
+        </div>
+        <div class="playrow" style="margin-top:12px">
+          <button class="btn ghost" id="qz-hint">Hint</button>
+          <button class="btn" id="qz-next">New circuit</button>
+        </div>
+        <p class="note" id="qz-hinttext" hidden></p>
+      </div>
+      <div class="card" id="qz-reveal">
+        <p class="verdict" id="qz-verdict">Pick an answer to see the working.</p>
+        <div id="qz-work"></div>
+        <div class="plot-host" id="qz-plot"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ---------------- helpers ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const MINUS = "−";
+function fmt(x, sig = 4) {
+  if (x === Infinity) return "∞";
+  if (x === -Infinity) return MINUS + "∞";
+  if (!isFinite(x)) return "—";
+  if (Math.abs(x) < 1e-12) return "0";
+  const ax = Math.abs(x);
+  if (ax >= 1e5 || ax < 1e-3) {
+    const e = Math.floor(Math.log10(ax));
+    const m = +(x / 10 ** e).toPrecision(3);
+    return (String(m) + "×10<sup>" + e + "</sup>").replace(/-/g, MINUS);
+  }
+  return String(+x.toPrecision(sig)).replace(/-/g, MINUS);
+}
+function fmtP(x, sig = 3) {
+  if (!isFinite(x)) return "—";
+  if (Math.abs(x) < 1e-12) return "0";
+  const ax = Math.abs(x);
+  if (ax >= 1e4 || ax < 1e-3) return x.toExponential(1).replace(/-/g, MINUS);
+  return String(+x.toPrecision(sig)).replace(/-/g, MINUS);
+}
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const caseColor = (k) => `var(--${k === "critical" ? "crit" : k})`;
+const caseName = { over: "Overdamped", critical: "Critically damped", under: "Underdamped" };
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+
+/* ---------------- second-order solver ----------------
+   State space x' = A x + b u,  y = c·x.  Characteristic eq: s² + a1 s + a0 = 0.
+   Solves y(t) = y_p(t) + y_h(t) exactly the way the slides do. */
+function solve2(sys) {
+  const { A, b, c, x0, input } = sys;
+  const tr = A[0][0] + A[1][1], det = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+  const a1 = -tr, a0 = det;
+  const alpha = a1 / 2, w0 = Math.sqrt(Math.max(a0, 0));
+  const disc = alpha * alpha - a0;
+  const n1 = c[0] * b[0] + c[1] * b[1];
+  const n0 = c[0] * (-A[1][1] * b[0] + A[0][1] * b[1]) + c[1] * (A[1][0] * b[0] - A[0][0] * b[1]);
+  const U = input.type === "none" ? 0 : input.U;
+  let yp0 = 0, dyp0 = 0, ypf = () => 0, pc = { type: "none" };
+  if (input.type === "dc") { const H0 = n0 / a0, K = H0 * U; yp0 = K; ypf = () => K; pc = { type: "dc", K, H0, U }; }
+  if (input.type === "ac") {
+    const w = input.w, nr = n0, ni = n1 * w, dr = a0 - w * w, di = a1 * w, den = dr * dr + di * di;
+    const Hr = (nr * dr + ni * di) / den, Hi = (ni * dr - nr * di) / den;
+    const ca = U * Hr, cb = -U * Hi;
+    yp0 = ca; dyp0 = cb * w; ypf = (t) => ca * Math.cos(w * t) + cb * Math.sin(w * t);
+    pc = { type: "ac", ca, cb, w, Hr, Hi, U, mag: Math.hypot(Hr, Hi), ph: Math.atan2(Hi, Hr) };
+  }
+  const y0 = c[0] * x0[0] + c[1] * x0[1];
+  const dx0 = [A[0][0] * x0[0] + A[0][1] * x0[1] + b[0] * U, A[1][0] * x0[0] + A[1][1] * x0[1] + b[1] * U];
+  const dy0 = c[0] * dx0[0] + c[1] * dx0[1];
+  const h0 = y0 - yp0, dh0 = dy0 - dyp0;
+  let kind, hf, K1, K2, roots, s1, s2, wd = 0;
+  const tol = 1e-7 * Math.max(Math.abs(a0), alpha * alpha, 1e-12);
+  if (Math.abs(disc) <= tol) {
+    kind = "critical"; s1 = s2 = -alpha; K1 = h0; K2 = dh0 - s1 * h0;
+    hf = (t) => (K1 + K2 * t) * Math.exp(s1 * t);
+    roots = [{ re: s1, im: 0 }, { re: s1, im: 0 }];
+  } else if (disc > 0) {
+    kind = "over"; const r = Math.sqrt(disc); s1 = -alpha + r; s2 = -alpha - r;
+    K1 = (dh0 - s2 * h0) / (s1 - s2); K2 = h0 - K1;
+    hf = (t) => K1 * Math.exp(s1 * t) + K2 * Math.exp(s2 * t);
+    roots = [{ re: s1, im: 0 }, { re: s2, im: 0 }];
+  } else {
+    kind = "under"; wd = Math.sqrt(-disc); K1 = h0; K2 = (dh0 + alpha * h0) / wd;
+    hf = (t) => Math.exp(-alpha * t) * (K1 * Math.cos(wd * t) + K2 * Math.sin(wd * t));
+    roots = [{ re: -alpha, im: wd }, { re: -alpha, im: -wd }];
+  }
+  const H = (w) => { const nr = n0, ni = n1 * w, dr = a0 - w * w, di = a1 * w; const den = dr * dr + di * di;
+    const re = (nr * dr + ni * di) / den, im = (ni * dr - nr * di) / den; return { mag: Math.hypot(re, im), ph: Math.atan2(im, re) }; };
+  return { tr, det, a1, a0, alpha, w0, zeta: w0 > 0 ? alpha / w0 : Infinity, disc, n1, n0, U, pc, ypf, y0, dy0, dx0, h0, dh0,
+    kind, hf, K1, K2, s1, s2, wd, roots, H, y: (t) => ypf(t) + hf(t) };
+}
+function rootsOf(A) {
+  const tr = A[0][0] + A[1][1], det = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+  const a = -tr / 2, d = (tr / 2) ** 2 - det;
+  if (d >= 0) { const r = Math.sqrt(d); return [[tr / 2 + r, 0], [tr / 2 - r, 0]]; }
+  const w = Math.sqrt(-d); return [[tr / 2, w], [tr / 2, -w]];
+}
+function settleTime(sol) {
+  let rate;
+  if (sol.kind === "over") rate = Math.min(Math.abs(sol.s1), Math.abs(sol.s2));
+  else rate = sol.alpha;
+  let T = (sol.kind === "critical" ? 8 : 6.5) / Math.max(rate, 1e-6);
+  if (sol.kind === "under") T = Math.min(T, 24 * 2 * Math.PI / sol.wd);
+  if (sol.pc.type === "ac") T = Math.max(T, 4 * 2 * Math.PI / sol.pc.w);
+  T = Math.min(T, 1e4);
+  return +T.toPrecision(2);
+}
+
+/* ---------------- plotting (SVG) ---------------- */
+function niceStep(span, n) { const raw = span / n; const mag = 10 ** Math.floor(Math.log10(raw)); const r = raw / mag; return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * mag; }
+function ticksLin(a, b, n) { const st = niceStep(b - a, n); const out = []; for (let v = Math.ceil(a / st - 1e-9) * st; v <= b + st * 1e-9; v += st) out.push(Math.abs(v) < st * 1e-9 ? 0 : v); return out; }
+function ticksLog(a, b) { const out = []; for (let k = Math.ceil(Math.log10(a) - 1e-9); k <= Math.floor(Math.log10(b) + 1e-9); k++) out.push(10 ** k); return out; }
+function padRange(lo, hi, f = 0.08) { if (!isFinite(lo) || !isFinite(hi)) return [-1, 1]; if (hi - lo < 1e-12) { const d = Math.max(Math.abs(hi) * 0.2, 1); return [lo - d, hi + d]; } const d = (hi - lo) * f; return [lo - d, hi + d]; }
+
+function renderPlot(host, cfg) {
+  const W = Math.max(240, Math.floor(host.clientWidth || 600)), H = cfg.height || 260;
+  const m = Object.assign({ l: 54, r: 14, t: 12, b: 38 }, cfg.margin || {});
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  let [x0, x1] = cfg.x, [y0, y1] = cfg.y;
+  if (cfg.equal) { // equal aspect: expand the shorter range
+    const sx = (x1 - x0) / pw, sy = (y1 - y0) / ph;
+    if (sx > sy) { const c = (y0 + y1) / 2, h = sx * ph / 2; y0 = c - h; y1 = c + h; }
+    else { const c = (x0 + x1) / 2, h = sy * pw / 2; x0 = c - h; x1 = c + h; }
+  }
+  const lx = !!cfg.xLog, L0 = lx ? Math.log10(x0) : 0, L1 = lx ? Math.log10(x1) : 0;
+  const X = (v) => m.l + (lx ? (Math.log10(v) - L0) / (L1 - L0) : (v - x0) / (x1 - x0)) * pw;
+  const Y = (v) => m.t + (1 - (v - y0) / (y1 - y0)) * ph;
+  const iX = (px) => { const f = (px - m.l) / pw; return lx ? 10 ** (L0 + f * (L1 - L0)) : x0 + f * (x1 - x0); };
+  const iY = (py) => y0 + (1 - (py - m.t) / ph) * (y1 - y0);
+  const cy = (v) => Math.max(m.t - ph, Math.min(m.t + 2 * ph, Y(v)));
+  const cid = "c" + Math.random().toString(36).slice(2, 9);
+  let s = `<svg class="plot" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${cfg.aria || "plot"}">`;
+  s += `<defs><clipPath id="${cid}"><rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}"/></clipPath></defs>`;
+  const xt = lx ? ticksLog(x0, x1) : ticksLin(x0, x1, cfg.xTicks || Math.max(3, Math.round(pw / 80)));
+  const yt = ticksLin(y0, y1, cfg.yTicks || Math.max(3, Math.round(ph / 45)));
+  for (const v of xt) { const px = X(v).toFixed(1); s += `<line class="gl" x1="${px}" x2="${px}" y1="${m.t}" y2="${m.t + ph}"/><text class="tk" x="${px}" y="${m.t + ph + 15}" text-anchor="middle">${fmtP(v)}</text>`; }
+  for (const v of yt) { const py = Y(v).toFixed(1); s += `<line class="gl" x1="${m.l}" x2="${m.l + pw}" y1="${py}" y2="${py}"/><text class="tk" x="${m.l - 6}" y="${(+py + 4).toFixed(1)}" text-anchor="end">${fmtP(v)}</text>`; }
+  if (y0 < 0 && y1 > 0) s += `<line class="ax" x1="${m.l}" x2="${m.l + pw}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>`;
+  if (!lx && x0 < 0 && x1 > 0) s += `<line class="ax" x1="${X(0).toFixed(1)}" x2="${X(0).toFixed(1)}" y1="${m.t}" y2="${m.t + ph}"/>`;
+  s += `<rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="none" stroke="${css("--line")}"/>`;
+  s += `<g clip-path="url(#${cid})">`;
+  for (const b of cfg.bands || []) {
+    const top = b.pts.map((p) => `${X(p[0]).toFixed(1)},${cy(p[2]).toFixed(1)}`), bot = b.pts.slice().reverse().map((p) => `${X(p[0]).toFixed(1)},${cy(p[1]).toFixed(1)}`);
+    s += `<polygon points="${top.concat(bot).join(" ")}" fill="${b.color}" fill-opacity="${b.opacity ?? 0.35}" stroke="none"/>`;
+  }
+  for (const vl of cfg.vlines || []) { if (vl.x < x0 || vl.x > x1) continue; const px = X(vl.x).toFixed(1); s += `<line x1="${px}" x2="${px}" y1="${m.t}" y2="${m.t + ph}" stroke="${vl.color}" stroke-width="${vl.w || 1.2}" stroke-dasharray="${vl.dash || ""}" class="${vl.cls || ""}"/>`; if (vl.label) s += `<text class="ann" x="${+px + 4}" y="${m.t + 13}" fill="${vl.color}">${vl.label}</text>`; }
+  for (const hl of cfg.hlines || []) { const py = Y(hl.y).toFixed(1); s += `<line x1="${m.l}" x2="${m.l + pw}" y1="${py}" y2="${py}" stroke="${hl.color}" stroke-width="1.2" stroke-dasharray="${hl.dash || ""}"/>`; if (hl.label) s += `<text class="ann" x="${m.l + pw - 4}" y="${+py - 5}" text-anchor="end" fill="${hl.color}">${hl.label}</text>`; }
+  for (const sr of cfg.series || []) {
+    if (!sr.pts.length) continue;
+    const d = sr.pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + cy(p[1]).toFixed(1)).join("");
+    s += `<path d="${d}" fill="none" stroke="${sr.color}" stroke-width="${sr.w || 2}" stroke-dasharray="${sr.dash || ""}" stroke-opacity="${sr.opacity ?? 1}" stroke-linejoin="round"/>`;
+    if (sr.label) { const p = sr.pts[sr.labelAt ?? sr.pts.length - 1]; s += `<text class="ann" x="${(X(p[0]) - 4).toFixed(1)}" y="${(cy(p[1]) - 5).toFixed(1)}" text-anchor="end" fill="${sr.color}">${sr.label}</text>`; }
+  }
+  for (const mk of cfg.marks || []) {
+    let px = X(mk.x), py = Y(mk.y); const off = px < m.l || px > m.l + pw || py < m.t || py > m.t + ph;
+    if (off && mk.type !== "x") continue;
+    px =Math.max(m.l + 6, Math.min(m.l + pw - 6, px)); py = Math.max(m.t + 6, Math.min(m.t + ph - 6, py));
+    const z = mk.size || 6, col = mk.color;
+    if (mk.type === "dot") s += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${mk.r || 1.8}" fill="${col}" fill-opacity="${mk.opacity ?? 1}"/>`;
+    else if (mk.type === "x") {
+      if (off) s += `<polygon points="${px - 7},${py} ${px + 3},${py - 6} ${px + 3},${py + 6}" fill="${col}"/>`;
+      else s += `<g class="${mk.cls || ""}"><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="12" fill="${col}" fill-opacity="0.001"/><path d="M${px - z},${py - z}L${px + z},${py + z}M${px - z},${py + z}L${px + z},${py - z}" stroke="${col}" stroke-width="3" stroke-linecap="round"/></g>`;
+    } else if (mk.type === "o") s += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${z}" fill="${css("--surface")}" stroke="${col}" stroke-width="2"/>`;
+    if (mk.label) s += `<text class="ann" x="${(px + (mk.dx ?? 9)).toFixed(1)}" y="${(py + (mk.dy ?? -8)).toFixed(1)}" fill="${col}" text-anchor="${mk.anchor || "start"}">${mk.label}</text>`;
+  }
+  s += `</g>`;
+  s += `<line class="hoverline" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" stroke="${css("--muted")}" stroke-dasharray="3 3" visibility="hidden"/>`;
+  if (cfg.cursor !== undefined) s += `<line class="cursor" x1="${X(cfg.cursor)}" x2="${X(cfg.cursor)}" y1="${m.t}" y2="${m.t + ph}" stroke="${css("--ink")}" stroke-width="1.4"/>`;
+  if (cfg.xLabel) s += `<text class="al" x="${m.l + pw / 2}" y="${H - 4}" text-anchor="middle">${cfg.xLabel}</text>`;
+  if (cfg.yLabel) s += `<text class="al" transform="translate(13 ${m.t + ph / 2}) rotate(-90)" text-anchor="middle">${cfg.yLabel}</text>`;
+  s += `</svg>`;
+  host.innerHTML = s;
+  const svg = host.querySelector("svg");
+  const api = { X, Y, iX, iY, m, pw, ph, W, H, svg, x0, x1, y0, y1 };
+  if (cfg.hover) {
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    const hl = svg.querySelector(".hoverline");
+    const hide = () => { tip.hidden = true; hl.setAttribute("visibility", "hidden"); };
+    svg.addEventListener("pointermove", (e) => {
+      const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) * (W / r.width);
+      if (px < m.l || px > m.l + pw) return hide();
+      const rows = cfg.hover(iX(px)); if (!rows) return hide();
+      hl.setAttribute("x1", px); hl.setAttribute("x2", px); hl.setAttribute("visibility", "visible");
+      tip.innerHTML = rows; tip.hidden = false;
+      const left = px * (r.width / W); const tw = tip.offsetWidth;
+      tip.style.left = Math.min(Math.max(4, left + 12), r.width - tw - 4) + "px"; tip.style.top = m.t + 4 + "px";
+    });
+    svg.addEventListener("pointerleave", hide);
+  }
+  return api;
+}
+
+/* ---------------- schematic drawing ---------------- */
+function comp(kind, x1, y1, x2, y2, name, val, o = {}) {
+  const vert = x1 === x2, len = vert ? y2 - y1 : x2 - x1, dir = Math.sign(len), L = Math.abs(len);
+  const bl = { R: 40, L: 44, C: 10, V: 30, I: 30, AC: 30, SW: 30 }[kind], a = (L - bl) / 2;
+  const P = (u, v) => (vert ? [x1 + v, y1 + dir * u] : [x1 + dir * u, y1 + v]);
+  const pt = (u, v) => P(u, v).map((n) => n.toFixed(1)).join(",");
+  let s = "";
+  const lead = (u0, u1) => `<polyline class="w" points="${pt(u0, 0)} ${pt(u1, 0)}"/>`;
+  if (kind === "R") {
+    s += lead(0, a) + lead(a + bl, L); const n = 6; const pts = [pt(a, 0)];
+    for (let i = 0; i < n; i++) pts.push(pt(a + (bl * (i + 0.5)) / n, (i % 2 ? -1 : 1) * 6));
+    pts.push(pt(a + bl, 0)); s += `<polyline class="w" points="${pts.join(" ")}"/>`;
+  } else if (kind === "L") {
+    s += lead(0, a) + lead(a + bl, L); const n = 4, r = bl / n / 2; let d = `M${pt(a, 0)}`;
+    for (let i = 0; i < n; i++) d += ` A${r},${r} 0 0 1 ${pt(a + (i + 1) * 2 * r, 0)}`;
+    s += `<path class="w" d="${d}"/>`;
+  } else if (kind === "C") {
+    s += lead(0, a) + lead(a + bl, L);
+    s += `<polyline class="w" points="${pt(a, -12)} ${pt(a, 12)}"/><polyline class="w" points="${pt(a + bl, -12)} ${pt(a + bl, 12)}"/>`;
+  } else if (kind === "V" || kind === "AC" || kind === "I") {
+    s += lead(0, a) + lead(a + bl, L); const [cx, cyy] = P(a + bl / 2, 0);
+    s += `<circle class="src" cx="${cx}" cy="${cyy}" r="15"/>`;
+    if (kind === "V") { const [px, py] = P(a + 8, 0), [mx, my] = P(a + bl - 8, 0); s += `<text class="lbl" x="${px}" y="${py + 4}" text-anchor="middle">+</text><text class="lbl" x="${mx}" y="${my + 4}" text-anchor="middle">${MINUS}</text>`; }
+    if (kind === "AC") { s += `<path class="w" d="M${cx - 8},${cyy} q4,-8 8,0 t8,0"/>`; const [px, py] = P(a - 4, 10); s += `<text class="lbl" x="${px}" y="${py + 4}" text-anchor="middle">+</text>`; }
+    if (kind === "I") { s += `<polyline class="w" points="${pt(a + bl - 6, 0)} ${pt(a + 9, 0)}"/><polygon class="arrowfill" points="${pt(a + 5, 0)} ${pt(a + 11, -4)} ${pt(a + 11, 4)}"/>`; }
+  } else if (kind === "SW") {
+    s += lead(0, a) + lead(a + bl, L);
+    const [ax, ay] = P(a, 0), [bx, by] = P(a + bl, 0);
+    s += `<circle cx="${ax}" cy="${ay}" r="2.6" class="src"/><circle cx="${bx}" cy="${by}" r="2.6" class="src"/>`;
+    s += `<polyline class="w" points="${ax},${ay} ${bx - 2},${by - 13}"/>`;
+    s += o.mode === "opens"
+      ? `<path class="w" d="M${ax + 10},${ay - 16} q8,-8 14,0" /><polygon class="arrowfill" points="${ax + 24},${ay - 16} ${ax + 20},${ay - 20} ${ax + 26},${ay - 21}"/>`
+      : `<path class="w" d="M${ax + 6},${ay - 20} q10,0 16,12" /><polygon class="arrowfill" points="${ax + 23},${ay - 6} ${ax + 18},${ay - 9} ${ax + 24},${ay - 12}"/>`;
+    s += `<text class="sm" x="${(ax + bx) / 2}" y="${ay - 25}" text-anchor="middle">t=0 ${o.mode === "opens" ? "opens" : "closes"}</text>`;
+    return s;
+  }
+  if (name) {
+    if (vert) {
+      const side = o.left ? -1 : 1; const [lx, ly] = P(L / 2, side * 20);
+      const anc = side > 0 ? "start" : "end";
+      s += `<text class="lbl" x="${lx}" y="${ly - 3}" text-anchor="${anc}">${name}</text><text class="val" x="${lx}" y="${ly + 12}" text-anchor="${anc}">${val}</text>`;
+    } else {
+      const [lx, ly] = P(L / 2, 0);
+      if (o.below) s += `<text class="lbl" x="${lx}" y="${ly + 24}" text-anchor="middle">${name} <tspan class="val">${val}</tspan></text>`;
+      else s += `<text class="lbl" x="${lx}" y="${ly - 13}" text-anchor="middle">${name} <tspan class="val">${val}</tspan></text>`;
+    }
+  }
+  return s;
+}
+const wire = (...pts) => `<polyline class="w" points="${pts.map((p) => p.join(",")).join(" ")}"/>`;
+const dot = (x, y) => `<circle class="node" cx="${x}" cy="${y}" r="3"/>`;
+const txt = (x, y, t, cls = "sm", anc = "middle") => `<text class="${cls}" x="${x}" y="${y}" text-anchor="${anc}">${t}</text>`;
+const svgWrap = (w, inner) => `<svg viewBox="0 0 ${w} 182" role="img" aria-label="circuit schematic">${inner}</svg>`;
+const u = (v, unit) => `${fmtP(v, 3)} ${unit}`;
+const sub = (s) => s.replace(/^([A-Za-z])(\w+)$/, "$1<tspan baseline-shift='sub' font-size='9'>$2</tspan>");
+function pm(x, y, sym) { return txt(x, y - 16, "+", "lbl") + txt(x, y + 3, sym, "sm") + txt(x, y + 22, MINUS, "lbl"); }
+
+/* ---------------- circuit library (from the slides) ---------------- */
+const P_R = (k, lab, min = 0.05, max = 20) => ({ k, label: lab, unit: "Ω", min, max, log: true });
+const P_L = (k, lab) => ({ k, label: lab, unit: "H", min: 0.05, max: 10, log: true });
+const P_C = (k, lab) => ({ k, label: lab, unit: "F", min: 0.02, max: 10, log: true });
+const sC = (n = "C") => ({ sym: `v<sub>${n}</sub>`, unit: "V", el: n });
+const sL = (n = "L") => ({ sym: `i<sub>${n}</sub>`, unit: "A", el: n });
+
+const CIRCUITS = [
+  {
+    id: "series", name: "Series RLC · natural response", slide: "Slides 3–11",
+    desc: "The battery charges C. At t = 0 the switch opens and the stored energy rings through L and R with no source.",
+    params: [{ k: "V0", label: "V<sub>0</sub>", unit: "V", min: 1, max: 20, step: 0.5 }, P_R("R", "R"), P_L("L", "L"), P_C("C", "C")],
+    sweep: "R", defaults: { V0: 10, R: 2, L: 1, C: 1 },
+    presets: [{ n: "Critical", s: "slide 4", k: "critical", v: { V0: 10, R: 2, L: 1, C: 1 } }, { n: "Over", s: "slide 6", k: "over", v: { V0: 10, R: 4, L: 1, C: 1 } }, { n: "Under", s: "slide 9", k: "under", v: { V0: 10, R: 1, L: 1, C: 1 } }],
+    states: [sC(), sL()], outputs: [0, 1], hName: ["V̂<sub>C</sub>/V̂<sub>s</sub>", "Î<sub>L</sub>/V̂<sub>s</sub>"],
+    build: (p) => ({ A: [[0, -1 / p.C], [1 / p.L, -p.R / p.L]], b: [0, -1 / p.L], x0: [p.V0, p.V0 / p.R], input: { type: "none" } }),
+    pre: (p) => `For t &lt; 0 the switch is closed and the circuit is in dc steady state, so C acts as an open and L as a short. KVL on the left mesh: v<sub>C</sub>(0<sup>−</sup>) = V<sub>0</sub> = ${fmt(p.V0)} V. KVL around the outside puts all of V<sub>0</sub> across R, so i<sub>L</sub>(0<sup>−</sup>) = V<sub>0</sub>/R = ${fmt(p.V0 / p.R)} A.`,
+    post: (p) => `For t &gt; 0 the source is gone and L, C and R are in series, so i<sub>C</sub> = −i<sub>L</sub>. KVL around the loop gives v<sub>L</sub> = v<sub>C</sub> − R·i<sub>L</sub>.`,
+    tfNote: "No source acts for t > 0, so (step 4 of the slides) we insert a test source V<sub>s</sub> in the loop. Setting it to zero recovers the original circuit.",
+    schem: (p) => svgWrap(380,
+      comp("V", 50, 40, 50, 150) + txt(26, 99, "V<tspan baseline-shift='sub' font-size='9'>0</tspan>", "lbl") + txt(26, 114, u(p.V0, "V"), "val") +
+      comp("SW", 50, 40, 125, 40, "", "", { mode: "opens" }) + wire([125, 40], [150, 40]) + dot(150, 40) + dot(150, 150) +
+      comp("C", 150, 40, 150, 150, "C", u(p.C, "F")) + pm(136, 95, "v<tspan baseline-shift='sub' font-size='8'>C</tspan>") +
+      comp("L", 150, 40, 250, 40, "L", u(p.L, "H")) + comp("R", 250, 40, 340, 40, "R", u(p.R, "Ω")) +
+      wire([340, 40], [340, 150], [50, 150]) + txt(245, 115, "i<tspan baseline-shift='sub' font-size='8'>L</tspan> →", "sm")),
+  },
+  {
+    id: "parallel", name: "Parallel RLC · step from a current source", slide: "Slides 14–25",
+    desc: "Everything starts at rest. At t = 0 the switch connects I<sub>s</sub> to the parallel R, L and C.",
+    params: [{ k: "Is", label: "I<sub>s</sub>", unit: "A", min: 0.1, max: 5, step: 0.1 }, P_R("R", "R", 0.02, 10), P_L("L", "L"), P_C("C", "C")],
+    sweep: "R", defaults: { Is: 1, R: 0.5, L: 1, C: 1 },
+    presets: [{ n: "Critical", s: "slide 15", k: "critical", v: { Is: 1, R: 0.5, L: 1, C: 1 } }, { n: "Over", s: "slide 18", k: "over", v: { Is: 1, R: 0.25, L: 1, C: 1 } }, { n: "Under", s: "slide 22", k: "under", v: { Is: 1, R: 1, L: 1, C: 1 } }],
+    states: [sL(), sC()], outputs: [0, 1], hName: ["Î<sub>L</sub>/Î<sub>s</sub>", "V̂<sub>C</sub>/Î<sub>s</sub>"],
+    build: (p) => ({ A: [[0, 1 / p.L], [-1 / p.C, -1 / (p.R * p.C)]], b: [0, 1 / p.C], x0: [0, 0], input: { type: "dc", U: p.Is } }),
+    pre: () => `No source is connected for t &lt; 0, so every natural initial condition is zero: v<sub>C</sub>(0<sup>−</sup>) = 0 V and i<sub>L</sub>(0<sup>−</sup>) = 0 A.`,
+    post: () => `At t = 0<sup>+</sup> the capacitor still holds 0 V, so v<sub>L</sub> = 0 and no current flows in R. KCL sends all of I<sub>s</sub> into C.`,
+    schem: (p) => svgWrap(380,
+      comp("I", 50, 40, 50, 150) + txt(26, 99, "I<tspan baseline-shift='sub' font-size='9'>s</tspan>", "lbl") + txt(26, 114, u(p.Is, "A"), "val") +
+      comp("SW", 50, 40, 125, 40, "", "") + wire([125, 40], [310, 40]) + wire([50, 150], [310, 150]) +
+      comp("C", 150, 40, 150, 150, "C", u(p.C, "F")) + comp("L", 230, 40, 230, 150, "L", u(p.L, "H")) + comp("R", 310, 40, 310, 150, "R", u(p.R, "Ω")) +
+      dot(150, 40) + dot(230, 40) + dot(150, 150) + dot(230, 150) + txt(222, 170, "i<tspan baseline-shift='sub' font-size='8'>L</tspan> ↓", "sm", "end")),
+  },
+  {
+    id: "icex", name: "Initial-condition example", slide: "Slide 28",
+    desc: "A current source switches on into a shunt L, then a series R into a shunt C and load R. Shows how to read v<sub>L</sub>(0<sup>+</sup>) and i<sub>C</sub>(0<sup>+</sup>) off the t = 0<sup>+</sup> circuit.",
+    params: [{ k: "Is", label: "I<sub>s</sub>", unit: "A", min: 0.5, max: 10, step: 0.5 }, P_R("R1", "R<sub>1</sub>", 0.05, 10), P_R("R2", "R<sub>2</sub>", 0.05, 10), P_L("L", "L"), P_C("C", "C")],
+    sweep: "R2", defaults: { Is: 5, R1: 1, R2: 0.5, L: 1, C: 2 },
+    presets: [{ n: "Slide values", s: "slide 28", k: "under", v: { Is: 5, R1: 1, R2: 0.5, L: 1, C: 2 } }],
+    states: [sL(), sC()], outputs: [1, 0], hName: ["Î<sub>L</sub>/Î<sub>s</sub>", "V̂<sub>C</sub>/Î<sub>s</sub>"],
+    build: (p) => ({ A: [[-p.R1 / p.L, 1 / p.L], [-1 / p.C, -1 / (p.R2 * p.C)]], b: [p.R1 / p.L, 1 / p.C], x0: [0, 0], input: { type: "dc", U: p.Is } }),
+    pre: () => `No source is connected for t &lt; 0, so v<sub>C</sub>(0<sup>−</sup>) = 0 V and i<sub>L</sub>(0<sup>−</sup>) = 0 A.`,
+    post: (p) => `At t = 0<sup>+</sup> the inductor (0 A) behaves like an open and the capacitor (0 V) like a short. KCL sends all ${fmt(p.Is)} A through R<sub>1</sub> into C, and none through R<sub>2</sub>. KVL around the center mesh gives v<sub>L</sub>(0<sup>+</sup>) = R<sub>1</sub>I<sub>s</sub> = ${fmt(p.R1 * p.Is)} V.`,
+    schem: (p) => svgWrap(380,
+      comp("I", 40, 40, 40, 150) + txt(18, 99, "I<tspan baseline-shift='sub' font-size='9'>s</tspan>", "lbl") + txt(18, 114, u(p.Is, "A"), "val") +
+      comp("SW", 40, 40, 95, 40, "", "") + wire([95, 40], [110, 40]) + dot(110, 40) + dot(110, 150) +
+      comp("L", 110, 40, 110, 150, "L", u(p.L, "H")) + comp("R", 110, 40, 220, 40, "R<tspan baseline-shift='sub' font-size='9'>1</tspan>", u(p.R1, "Ω")) +
+      dot(220, 40) + dot(220, 150) + comp("C", 220, 40, 220, 150, "C", u(p.C, "F")) + comp("R", 220, 40, 320, 40, "R<tspan baseline-shift='sub' font-size='9'>2</tspan>", u(p.R2, "Ω")) +
+      wire([320, 40], [320, 150], [40, 150])),
+  },
+  {
+    id: "twocap", name: "Two-capacitor circuit", slide: "Slides 31–32",
+    desc: "Two capacitors and three resistors, no inductor. Watch the roots: they stay on the real axis whatever values you choose.",
+    params: [{ k: "Vs", label: "V<sub>s</sub>", unit: "V", min: 1, max: 20, step: 0.5 }, P_R("R1", "R<sub>1</sub>", 0.1, 20), P_R("R2", "R<sub>2</sub>", 0.05, 20), P_R("R3", "R<sub>3</sub>", 0.1, 20), P_C("C1", "C<sub>1</sub>"), P_C("C2", "C<sub>2</sub>")],
+    sweep: "R2", defaults: { Vs: 5, R1: 2, R2: 2, R3: 2, C1: 0.5, C2: 0.5 },
+    presets: [{ n: "Slide values", s: "slide 31", k: "over", v: { Vs: 5, R1: 2, R2: 2, R3: 2, C1: 0.5, C2: 0.5 } }],
+    states: [sC("C1"), sC("C2")], outputs: [0, 1], hName: ["V̂<sub>C1</sub>/V̂<sub>s</sub>", "V̂<sub>C2</sub>/V̂<sub>s</sub>"],
+    build: (p) => { const G1 = 1 / p.R1, G2 = 1 / p.R2, G3 = 1 / p.R3; return { A: [[-(G1 + G2) / p.C1, G2 / p.C1], [G2 / p.C2, -(G2 + G3) / p.C2]], b: [G1 / p.C1, 0], x0: [0, 0], input: { type: "dc", U: p.Vs } }; },
+    pre: () => `No source is connected for t &lt; 0, so v<sub>C1</sub>(0<sup>−</sup>) = v<sub>C2</sub>(0<sup>−</sup>) = 0 V.`,
+    post: (p) => `Since v<sub>C1</sub>(0<sup>+</sup>) = 0, C<sub>1</sub> shorts out everything to its right, so all of V<sub>s</sub> drops across R<sub>1</sub>: i<sub>C1</sub>(0<sup>+</sup>) = V<sub>s</sub>/R<sub>1</sub> = ${fmt(p.Vs / p.R1)} A. Both capacitors sit at 0 V, so no current flows in R<sub>2</sub> and i<sub>C2</sub>(0<sup>+</sup>) = 0.`,
+    extra: "Only one kind of storage element (two capacitors) means the roots are always real. An RC-only or RL-only circuit can never be underdamped.",
+    schem: (p) => svgWrap(390,
+      comp("V", 40, 40, 40, 150) + comp("SW", 40, 40, 100, 40, "", "") + wire([100, 40], [130, 40]) + txt(18, 99, "V<tspan baseline-shift='sub' font-size='9'>s</tspan>", "lbl") + txt(18, 114, u(p.Vs, "V"), "val") +
+      dot(130, 40) + dot(130, 150) + comp("C", 130, 40, 130, 150, "C<tspan baseline-shift='sub' font-size='9'>1</tspan>", u(p.C1, "F")) +
+      comp("R", 130, 40, 240, 40, "R<tspan baseline-shift='sub' font-size='9'>2</tspan>", u(p.R2, "Ω")) + dot(240, 40) + dot(240, 150) +
+      comp("C", 240, 40, 240, 150, "C<tspan baseline-shift='sub' font-size='9'>2</tspan>", u(p.C2, "F")) + wire([240, 40], [330, 40]) +
+      comp("R", 330, 40, 330, 150, "R<tspan baseline-shift='sub' font-size='9'>3</tspan>", u(p.R3, "Ω")) +
+      comp("R", 40, 150, 130, 150, "R<tspan baseline-shift='sub' font-size='9'>1</tspan>", u(p.R1, "Ω"), { below: true }) + wire([130, 150], [330, 150])),
+  },
+  {
+    id: "twoind", name: "Two-inductor circuit", slide: "Slides 33–34",
+    desc: "For t < 0 a 1 A source feeds L<sub>2</sub>. At t = 0 that source is removed and the voltage source is switched in.",
+    params: [{ k: "Vs", label: "V<sub>s</sub>", unit: "V", min: 0.5, max: 10, step: 0.5 }, { k: "I0", label: "I<sub>0</sub>", unit: "A", min: -3, max: 3, step: 0.1 }, P_R("R1", "R<sub>1</sub>", 0.1, 10), P_R("R2", "R<sub>2</sub>", 0.05, 10), P_L("L1", "L<sub>1</sub>"), P_L("L2", "L<sub>2</sub>")],
+    sweep: "R2", defaults: { Vs: 3, I0: 1, R1: 1, R2: 1, L1: 1, L2: 1 },
+    presets: [{ n: "Slide values", s: "slide 33", k: "over", v: { Vs: 3, I0: 1, R1: 1, R2: 1, L1: 1, L2: 1 } }],
+    states: [sL("L1"), sL("L2")], outputs: [1, 0], hName: ["Î<sub>L1</sub>/V̂<sub>s</sub>", "Î<sub>L2</sub>/V̂<sub>s</sub>"],
+    build: (p) => ({ A: [[-p.R1 / p.L1, -p.R1 / p.L1], [-p.R1 / p.L2, -(p.R1 + p.R2) / p.L2]], b: [1 / p.L1, 1 / p.L2], x0: [0, p.I0], input: { type: "dc", U: p.Vs } }),
+    pre: (p) => `For t &lt; 0 only the I<sub>0</sub> source is connected. L<sub>2</sub> is a dc short and takes all of it, so i<sub>L1</sub>(0<sup>−</sup>) = 0 A and i<sub>L2</sub>(0<sup>−</sup>) = I<sub>0</sub> = ${fmt(p.I0)} A.`,
+    post: (p) => { const v1 = p.Vs - p.R1 * p.I0; return `At t = 0<sup>+</sup> the inductor currents hold. The voltage across L<sub>1</sub> is v<sub>1</sub> = V<sub>s</sub> − R<sub>1</sub>(i<sub>L1</sub> + i<sub>L2</sub>) = ${fmt(v1)} V, and KVL around the right mesh gives v<sub>L2</sub> = v<sub>1</sub> − R<sub>2</sub>i<sub>L2</sub> = ${fmt(v1 - p.R2 * p.I0)} V.`; },
+    extra: "Two inductors and no capacitor: like the two-capacitor case, the roots can never become complex.",
+    schem: (p) => svgWrap(400,
+      comp("V", 40, 40, 40, 150) + txt(18, 99, "V<tspan baseline-shift='sub' font-size='9'>s</tspan>", "lbl") + txt(18, 114, u(p.Vs, "V"), "val") +
+      comp("SW", 40, 40, 90, 40, "", "") + comp("R", 90, 40, 160, 40, "R<tspan baseline-shift='sub' font-size='9'>1</tspan>", u(p.R1, "Ω")) +
+      dot(160, 40) + dot(160, 150) + comp("L", 160, 40, 160, 150, "L<tspan baseline-shift='sub' font-size='9'>1</tspan>", u(p.L1, "H")) +
+      comp("R", 160, 40, 250, 40, "R<tspan baseline-shift='sub' font-size='9'>2</tspan>", u(p.R2, "Ω")) + dot(250, 40) + dot(250, 150) +
+      comp("L", 250, 40, 250, 150, "L<tspan baseline-shift='sub' font-size='9'>2</tspan>", u(p.L2, "H")) +
+      wire([250, 40], [295, 40]) + comp("SW", 295, 40, 345, 40, "", "", { mode: "opens" }) + wire([345, 40], [360, 40]) +
+      comp("I", 360, 40, 360, 150) + txt(382, 99, "I<tspan baseline-shift='sub' font-size='9'>0</tspan>", "lbl", "middle") + txt(380, 172, u(p.I0, "A"), "val", "end") +
+      wire([40, 150], [360, 150])),
+  },
+  {
+    id: "sin", name: "Sinusoidal source", slide: "Slides 35–38",
+    desc: "A cosine source switches on at t = 0. The answer is a decaying natural part plus a steady sinusoid found with H(jω).",
+    params: [{ k: "Vm", label: "V<sub>m</sub>", unit: "V", min: 0.1, max: 5, step: 0.1 }, { k: "w", label: "ω", unit: "rad/s", min: 0.05, max: 20, log: true }, P_R("R1", "R<sub>1</sub>", 0.05, 10), P_R("R2", "R<sub>2</sub>", 0.05, 10), P_L("L", "L"), P_C("C", "C")],
+    sweep: "R2", defaults: { Vm: 1, w: 2, R1: 0.5, R2: 2, L: 1, C: 1 },
+    presets: [{ n: "Slide values", s: "slide 35", k: "under", v: { Vm: 1, w: 2, R1: 0.5, R2: 2, L: 1, C: 1 } }, { n: "Drive at ω = 0.3", s: "slow", k: "under", v: { Vm: 1, w: 0.3, R1: 0.5, R2: 2, L: 1, C: 1 } }, { n: "Light damping, ω = 1", s: "resonance", k: "under", v: { Vm: 1, w: 1, R1: 10, R2: 0.1, L: 1, C: 1 } }],
+    states: [sC(), sL()], outputs: [0, 1], hName: ["V̂<sub>C</sub>/V̂<sub>s</sub>", "Î<sub>L</sub>/V̂<sub>s</sub>"],
+    build: (p) => ({ A: [[-1 / (p.R1 * p.C), -1 / p.C], [1 / p.L, -p.R2 / p.L]], b: [1 / (p.R1 * p.C), 0], x0: [0, 0], input: { type: "ac", U: p.Vm, w: p.w } }),
+    pre: () => `No source is connected for t &lt; 0, so v<sub>C</sub>(0<sup>−</sup>) = 0 V and i<sub>L</sub>(0<sup>−</sup>) = 0 A.`,
+    post: (p) => `At t = 0<sup>+</sup> the source is at V<sub>m</sub>cos(0) = ${fmt(p.Vm)} V. The capacitor (0 V) acts as a short, so ${fmt(p.Vm)} V sits across R<sub>1</sub> and i<sub>C</sub>(0<sup>+</sup>) = V<sub>m</sub>/R<sub>1</sub> = ${fmt(p.Vm / p.R1)} A. With v<sub>C</sub> = 0 and i<sub>L</sub> = 0, v<sub>L</sub>(0<sup>+</sup>) = 0.`,
+    schem: (p) => svgWrap(380,
+      comp("AC", 40, 40, 40, 150) + txt(18, 92, `${fmtP(p.Vm)}cos`, "val", "middle") + txt(18, 106, `(${fmtP(p.w)}t)`, "val", "middle") +
+      comp("SW", 40, 40, 90, 40, "", "") + comp("R", 90, 40, 170, 40, "R<tspan baseline-shift='sub' font-size='9'>1</tspan>", u(p.R1, "Ω")) +
+      dot(170, 40) + dot(170, 150) + comp("C", 170, 40, 170, 150, "C", u(p.C, "F")) + pm(156, 95, "v<tspan baseline-shift='sub' font-size='8'>C</tspan>") +
+      comp("R", 170, 40, 270, 40, "R<tspan baseline-shift='sub' font-size='9'>2</tspan>", u(p.R2, "Ω")) + wire([270, 40], [300, 40]) +
+      comp("L", 300, 40, 300, 150, "L", u(p.L, "H")) + wire([300, 150], [40, 150])),
+  },
+];
+
+/* ---------------- parameter controls ---------------- */
+function paramRow(p, val, onChange, idp) {
+  const id = `${idp}-${p.k}`;
+  const row = document.createElement("div"); row.className = "prow";
+  row.innerHTML = `<label for="${id}">${p.label}</label><input type="range" id="${id}-r" min="0" max="1000" step="1" aria-label="${p.k} slider"><span class="pval"><input type="number" id="${id}" step="any"><span class="unit">${p.unit}</span></span>`;
+  const rng = row.querySelector('input[type="range"]'), num = row.querySelector('input[type="number"]');
+  const toPos = (v) => p.log ? 1000 * Math.log(v / p.min) / Math.log(p.max / p.min) : 1000 * (v - p.min) / (p.max - p.min);
+  const fromPos = (pos) => { if (p.log) return +(p.min * (p.max / p.min) ** (pos / 1000)).toPrecision(3); const v = p.min + (p.max - p.min) * pos / 1000; return +(Math.round(v / p.step) * p.step).toFixed(6); };
+  const set = (v) => { rng.value = Math.max(0, Math.min(1000, toPos(v))); num.value = +(+v).toPrecision(4); };
+  set(val);
+  rng.addEventListener("input", () => { const v = fromPos(+rng.value); num.value = v; onChange(p.k, v); });
+  num.addEventListener("change", () => { let v = parseFloat(num.value); if (!isFinite(v) || (p.unit !== "A" && v <= 0) || (p.k === "Is" && v <= 0)) { set(rng.dataset.last || val); return; } rng.value = Math.max(0, Math.min(1000, toPos(v))); onChange(p.k, v); });
+  return { row, set };
+}
+
+/* ---------------- EXPLORER ---------------- */
+const ex = { cid: "series", vals: {}, out: {}, pins: [], tg: { forced: true, natural: false, env: true, slope: true } };
+for (const c of CIRCUITS) { ex.vals[c.id] = { ...c.defaults }; ex.out[c.id] = 0; }
+const cur = () => CIRCUITS.find((c) => c.id === ex.cid);
+let paramSetters = {};
+
+function setupExplorer() {
+  const sel = $("#circuit");
+  sel.innerHTML = CIRCUITS.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
+  sel.addEventListener("change", () => { ex.cid = sel.value; ex.pins = []; buildControls(); renderExplorer(); });
+  $("#outsel").addEventListener("change", (e) => { ex.out[ex.cid] = +e.target.value; ex.pins = []; renderExplorer(); });
+  for (const k of ["forced", "natural", "env", "slope"]) $("#tg-" + k).addEventListener("change", (e) => { ex.tg[k] = e.target.checked; renderExplorer(); });
+  $("#pin").addEventListener("click", () => { if (ex.last) { ex.pins.push(ex.last); if (ex.pins.length > 3) ex.pins.shift(); renderExplorer(); } });
+  $("#unpin").addEventListener("click", () => { ex.pins = []; renderExplorer(); });
+  buildControls();
+}
+function buildControls() {
+  const c = cur(), v = ex.vals[c.id];
+  $("#circuit").value = c.id;
+  $("#cslide").textContent = c.slide;
+  $("#cdesc").innerHTML = c.desc;
+  $("#presets").innerHTML = c.presets.map((p, i) => `<button class="chipbtn" data-i="${i}"><span class="sw" style="background:${caseColor(p.k)}"></span>${p.n} <span class="sub">${p.s}</span></button>`).join("");
+  $("#presets").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    const pr = c.presets[+b.dataset.i]; Object.assign(ex.vals[c.id], pr.v);
+    for (const k in pr.v) paramSetters[k]?.(pr.v[k]); renderExplorer();
+  }));
+  const host = $("#params"); host.innerHTML = ""; paramSetters = {};
+  for (const p of c.params) {
+    const { row, set } = paramRow(p, v[p.k], (k, val) => { ex.vals[c.id][k] = val; renderExplorer(); }, "ex");
+    host.appendChild(row); paramSetters[p.k] = set;
+  }
+  $("#outsel").innerHTML = c.outputs.map((si, i) => { const st = c.states[si]; return `<option value="${i}">${st.sym.replace(/<\/?sub>/g, "")}(t)${i === 0 ? "  (as in the slides)" : ""}</option>`; }).join("");
+  $("#outsel").value = ex.out[c.id];
+}
+
+function sysFor(c, p, outIdx) {
+  const s = c.build(p); const si = c.outputs[outIdx]; s.c = si === 0 ? [1, 0] : [0, 1]; s.si = si; return s;
+}
+function expTerm(s) { // e^{st}
+  if (Math.abs(s) < 1e-12) return "";
+  const a = Math.abs(s); const k = Math.abs(a - 1) < 1e-9 ? "" : fmt(a, 4);
+  return `e<sup>${s < 0 ? MINUS : ""}${k}t</sup>`;
+}
+function joinTerms(terms) {
+  const mx = Math.max(1e-300, ...terms.map((t) => Math.abs(t[0])));
+  let out = "";
+  for (const [coef, body] of terms) {
+    if (Math.abs(coef) < mx * 1e-9) continue;
+    const a = Math.abs(coef); const num = body && Math.abs(a - 1) < 1e-9 ? "" : fmt(a, 4);
+    const piece = num + (body && num ? " " : "") + body;
+    out += out ? (coef < 0 ? ` ${MINUS} ` : " + ") + piece : (coef < 0 ? MINUS : "") + piece;
+  }
+  return out || "0";
+}
+const wt = (w) => (Math.abs(w - 1) < 1e-9 ? "t" : fmt(w) + "t");
+function solutionExpr(sol) {
+  const t = [];
+  if (sol.pc.type === "dc") t.push([sol.pc.K, ""]);
+  if (sol.pc.type === "ac") { const w = wt(sol.pc.w); t.push([sol.pc.ca, `cos(${w})`]); t.push([sol.pc.cb, `sin(${w})`]); }
+  if (sol.kind === "over") { t.push([sol.K1, expTerm(sol.s1)]); t.push([sol.K2, expTerm(sol.s2)]); }
+  if (sol.kind === "critical") { t.push([sol.K1, expTerm(sol.s1)]); t.push([sol.K2, "t " + expTerm(sol.s1)]); }
+  if (sol.kind === "under") { const e = expTerm(-sol.alpha), w = wt(sol.wd); t.push([sol.K1, `${e} cos(${w})`]); t.push([sol.K2, `${e} sin(${w})`]); }
+  return joinTerms(t);
+}
+function polyStr(a1, a0) { return `s² ${a1 < 0 ? MINUS : "+"} ${fmt(Math.abs(a1))}s ${a0 < 0 ? MINUS : "+"} ${fmt(Math.abs(a0))}`; }
+function numStr(n1, n0) { if (Math.abs(n1) < 1e-12) return fmt(n0); if (Math.abs(n0) < 1e-12) return (Math.abs(n1 - 1) < 1e-9 ? "" : fmt(n1)) + "s"; return `${fmt(n1)}s ${n0 < 0 ? MINUS : "+"} ${fmt(Math.abs(n0))}`; }
+function rootStr(sol) {
+  if (sol.kind === "under") return `${fmt(-sol.alpha)} ± j${fmt(sol.wd)}`;
+  if (sol.kind === "critical") return `${fmt(sol.s1)} (double)`;
+  return `${fmt(sol.s1)}, ${fmt(sol.s2)}`;
+}
+function caseSub(sol) {
+  if (sol.kind === "critical") return "α = ω₀ · one repeated root";
+  if (Math.abs(sol.zeta - 1) < 0.03) return `ζ = ${fmt(sol.zeta, 3)} · almost critical`;
+  return sol.kind === "over" ? "α > ω₀ · two real roots" : "α < ω₀ · complex roots";
+}
+
+function renderExplorer() {
+  const c = cur(), p = ex.vals[c.id], oi = ex.out[c.id];
+  const sys = sysFor(c, p, oi), sol = solve2(sys);
+  const st = c.states[sys.si];
+  $("#schem").innerHTML = c.schem(p);
+  const kc = caseColor(sol.kind);
+
+  // readout
+  $("#readout").innerHTML = `<div class="casechip case-${sol.kind}"><b>${caseName[sol.kind]}</b><span>${caseSub(sol)}</span></div>` +
+    [["α (neper freq.)", fmt(sol.alpha) + " s⁻¹"], ["ω₀ (resonant)", fmt(sol.w0) + " rad/s"], ["ζ = α/ω₀", fmt(sol.zeta, 3)], ["roots s₁, s₂", rootStr(sol)]]
+      .concat(sol.kind === "under" ? [["ω_d (rings at)", fmt(sol.wd) + " rad/s"]] : [])
+      .map(([k, v]) => `<div class="kv"><span class="k">${k.replace("ω_d", "ω<sub>d</sub>")}</span><span class="v">${v}</span></div>`).join("");
+
+  // time plot
+  const T = Math.max(settleTime(sol), ...ex.pins.map((pp) => pp.T));
+  const N = 700, pts = [], fp = [], np = [], env = [];
+  const Aenv = Math.hypot(sol.K1, sol.K2);
+  for (let i = 0; i <= N; i++) {
+    const t = (T * i) / N; const yp = sol.ypf(t), yh = sol.hf(t);
+    pts.push([t, yp + yh]); fp.push([t, yp]); np.push([t, yh]);
+    if (sol.kind === "under") env.push([t, yp - Aenv * Math.exp(-sol.alpha * t), yp + Aenv * Math.exp(-sol.alpha * t)]);
+  }
+  let lo = Infinity, hi = -Infinity;
+  const consider = (arr) => arr.forEach((q) => { if (q[1] < lo) lo = q[1]; if (q[1] > hi) hi = q[1]; });
+  consider(pts); ex.pins.forEach((pp) => consider(pp.pts)); if (ex.tg.natural) consider(np); if (sol.pc.type !== "none" && ex.tg.forced) consider(fp);
+  lo = Math.min(lo, 0); hi = Math.max(hi, 0);
+  const series = [];
+  const pinCols = ["var(--pin1)", "var(--pin2)", "var(--pin3)"];
+  ex.pins.forEach((pp, i) => series.push({ pts: pp.pts, color: pinCols[i], w: 1.6, opacity: 0.9 }));
+  if (ex.tg.natural) series.push({ pts: np, color: css("--muted"), w: 1.4, dash: "2 3" });
+  if (sol.pc.type !== "none" && ex.tg.forced) series.push({ pts: fp, color: css("--muted"), w: 1.4, dash: "6 4" });
+  const bands = sol.kind === "under" && ex.tg.env ? [{ pts: env, color: kc, opacity: 0.1 }] : [];
+  series.push({ pts, color: css("--accent"), w: 2.4 });
+  if (ex.tg.slope) { const dt = T * 0.14; series.push({ pts: [[0, sol.y0], [dt, sol.y0 + sol.dy0 * dt]], color: kc, w: 2, dash: "5 3" }); }
+  const marks = ex.tg.slope ? [{ x: 0, y: sol.y0, type: "o", size: 4, color: kc, label: `${st.sym.replace(/<\/?sub>/g, "")}(0⁺) = ${fmtP(sol.y0)}, slope ${fmtP(sol.dy0)} ${st.unit}/s`, dx: 10, dy: sol.dy0 >= 0 ? 16 : -10 }] : [];
+  const symPlain = st.sym.replace(/<\/?sub>/g, "");
+  renderPlot($("#p-time"), {
+    x: [0, T], y: padRange(lo, hi), height: 300, series, bands, marks, aria: "time response",
+    xLabel: "t (s)", yLabel: `${symPlain}(t)  [${st.unit}]`,
+    hover: (t) => { const rows = [[symPlain, fmtP(sol.y(t)) + " " + st.unit]]; if (sol.pc.type !== "none") rows.push(["forced", fmtP(sol.ypf(t))]); rows.push(["natural", fmtP(sol.hf(t))]); return `<div><span>t</span><span>${fmtP(t)} s</span></div>` + rows.map((r) => `<div><span>${r[0]}</span><span>${r[1]}</span></div>`).join(""); },
+  });
+  ex.last = { pts, T, label: c.params.filter((q) => q.k !== "V0").map((q) => `${q.label.replace(/<\/?sub>/g, "")}=${fmtP(p[q.k])}`).join(" ") };
+  $("#unpin").disabled = !ex.pins.length;
+  let leg = `<span><i style="border-color:var(--accent)"></i>${symPlain}(t) complete response</span>`;
+  if (sol.pc.type !== "none" && ex.tg.forced) leg += `<span><i class="dash" style="border-color:var(--muted)"></i>forced (particular) part</span>`;
+  if (ex.tg.natural) leg += `<span><i class="dot" style="border-color:var(--muted)"></i>natural (homogeneous) part</span>`;
+  if (sol.kind === "under" && ex.tg.env) leg += `<span><i style="border-color:${kc};opacity:.5;border-top-width:8px"></i>e<sup>−αt</sup> envelope</span>`;
+  if (ex.tg.slope) leg += `<span><i class="dash" style="border-color:${kc}"></i>slope from the needed initial condition</span>`;
+  ex.pins.forEach((pp, i) => leg += `<span><i style="border-color:${pinCols[i]}"></i>pinned: ${pp.label}</span>`);
+  $("#leg-time").innerHTML = leg;
+
+  // s-plane with root locus over the sweep parameter
+  const sp = c.params.find((q) => q.k === c.sweep); const locus = [];
+  for (let i = 0; i <= 160; i++) {
+    const v = sp.min * (sp.max / sp.min) ** (i / 160); const q = { ...p, [c.sweep]: v };
+    for (const r of rootsOf(c.build(q).A)) locus.push({ x: r[0], y: r[1], type: "dot", color: css("--muted"), opacity: 0.55, r: 1.6 });
+  }
+  const M = Math.max(sol.w0, ...sol.roots.map((r) => Math.hypot(r.re, r.im))) * 1.25 || 1;
+  const circ = []; for (let i = 0; i <= 90; i++) { const th = Math.PI / 2 + (Math.PI * i) / 90; circ.push([sol.w0 * Math.cos(th), sol.w0 * Math.sin(th)]); }
+  const rootMarks = sol.roots.map((r, i) => ({ x: r.re, y: r.im, type: "x", color: kc, size: 6, label: i === 0 ? (sol.kind === "critical" ? "s₁ = s₂" : "s₁") : (sol.kind === "critical" ? "" : "s₂"), dy: sol.kind === "under" ? (i ? 16 : -8) : (i ? 18 : -10) }));
+  renderPlot($("#p-s"), { x: [-M * 1.05, M * 0.3], y: [-M * 0.8, M * 0.8], equal: true, height: 270, aria: "s-plane",
+    series: [{ pts: circ, color: css("--muted"), w: 1, dash: "3 4" }], marks: locus.concat(rootMarks), xLabel: "σ (real part, s⁻¹)", yLabel: "jω (rad/s)" });
+  $("#s-note").innerHTML = `Grey dots: where the roots travel as ${sp.label} sweeps ${fmt(sp.min)}–${fmt(sp.max)} ${sp.unit}. Dashed arc: radius ω₀ = ${fmt(sol.w0)}. ${c.extra || "Complex roots always sit on this arc, the two real roots meet on it at critical damping."}`;
+
+  // Bode
+  const wc = Math.max(sol.w0, 1e-3); let wmin = wc / 100, wmax = wc * 100;
+  if (sol.pc.type === "ac") { wmin = Math.min(wmin, sol.pc.w / 3); wmax = Math.max(wmax, sol.pc.w * 3); }
+  const mag = [], ph = []; let mx = -Infinity;
+  for (let i = 0; i <= 300; i++) { const w = wmin * (wmax / wmin) ** (i / 300); const h = sol.H(w); const db = 20 * Math.log10(Math.max(h.mag, 1e-12)); mag.push([w, db]); ph.push([w, (h.ph * 180) / Math.PI]); if (db > mx) mx = db; }
+  // unwrap phase
+  for (let i = 1; i < ph.length; i++) { while (ph[i][1] - ph[i - 1][1] > 180) ph[i][1] -= 360; while (ph[i][1] - ph[i - 1][1] < -180) ph[i][1] += 360; }
+  const vls = [{ x: sol.w0, color: kc, dash: "4 3", label: "ω₀" }];
+  if (sol.pc.type === "ac") vls.push({ x: sol.pc.w, color: css("--accent"), dash: "", w: 1.6, label: "source ω" });
+  const hover = (w) => { const h = sol.H(w); return `<div><span>ω</span><span>${fmtP(w)} rad/s</span></div><div><span>|H|</span><span>${fmtP(h.mag)} (${fmtP(20 * Math.log10(h.mag))} dB)</span></div><div><span>∠H</span><span>${fmtP(h.ph * 180 / Math.PI)}°</span></div>`; };
+  renderPlot($("#p-mag"), { x: [wmin, wmax], xLog: true, y: [Math.max(mx - 80, Math.min(...mag.map((q) => q[1]))) - 3, mx + 6], height: 175, series: [{ pts: mag, color: css("--accent"), w: 2.2 }], vlines: vls, yLabel: "|H| (dB)", margin: { b: 22 }, hover, aria: "Bode magnitude" });
+  const phs = ph.map((q) => q[1]); renderPlot($("#p-ph"), { x: [wmin, wmax], xLog: true, y: padRange(Math.min(...phs), Math.max(...phs), 0.1), height: 130, series: [{ pts: ph, color: css("--accent"), w: 2 }], vlines: vls.map((v) => ({ ...v, label: "" })), yLabel: "∠H (°)", xLabel: "ω (rad/s, log scale)", hover, aria: "Bode phase" });
+  $("#h-label").innerHTML = `H(jω) = ${c.hName[sys.si]}`;
+  const pk = mag.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const H0 = sol.H(wmin).mag;
+  let bn = sol.kind === "under" && sol.zeta < 0.7 ? `Resonant peak near ${fmt(pk[0], 3)} rad/s. Lower ζ makes it taller and sharper.` : "No resonant peak: with this much damping the response just rolls off.";
+  if (sol.pc.type === "ac") bn += ` The source at ω = ${fmt(sol.pc.w)} gets gain |H| = ${fmt(sol.pc.mag, 3)} and phase ${fmt((sol.pc.ph * 180) / Math.PI, 3)}°, which sets the forced part.`;
+  $("#bode-note").innerHTML = bn;
+
+  // worked solution
+  renderSteps(c, p, sys, sol, st);
+}
+
+function renderSteps(c, p, sys, sol, st) {
+  const sym = st.sym, un = st.unit, sp = "<sup>+</sup>";
+  const stLines = c.states.map((s, k) => `${s.sym}(0<sup>−</sup>) = ${s.sym}(0${sp}) = ${fmt(sys.x0[k])} ${s.unit}`).join("; &nbsp; ");
+  const derivLines = c.states.map((s, k) => {
+    const el = s.el.replace(/^([A-Z])(\d)$/, "$1<sub>$2</sub>"), val = p[s.el], d = sol.dx0[k];
+    return s.el[0] === "C"
+      ? `${s.sym}′(0${sp}) = i<sub>${s.el}</sub>(0${sp}) / ${el} = ${fmt(val * d)} A / ${fmt(val)} F = <b>${fmt(d)} V/s</b>`
+      : `${s.sym}′(0${sp}) = v<sub>${s.el}</sub>(0${sp}) / ${el} = ${fmt(val * d)} V / ${fmt(val)} H = <b>${fmt(d)} A/s</b>`;
+  });
+  const hHtml = `H(s) = ${c.hName[sys.si]} = (${numStr(sol.n1, sol.n0)}) / (${polyStr(sol.a1, sol.a0)})`;
+  let homog;
+  if (sol.kind === "over") homog = `${sym},h(t) = A e<sup>s₁t</sup> + B e<sup>s₂t</sup> = A${expTerm(sol.s1)} + B${expTerm(sol.s2)}`;
+  if (sol.kind === "critical") homog = `${sym},h(t) = A e<sup>st</sup> + B t e<sup>st</sup> = A${expTerm(sol.s1)} + B t${expTerm(sol.s1)}`;
+  if (sol.kind === "under") homog = `${sym},h(t) = e<sup>−αt</sup>(A cos ω<sub>d</sub>t + B sin ω<sub>d</sub>t) = ${expTerm(-sol.alpha)}(A cos ${fmt(sol.wd)}t + B sin ${fmt(sol.wd)}t)`;
+  const cmp = sol.kind === "under" ? "&lt;" : sol.kind === "over" ? "&gt;" : "=";
+  let part;
+  if (sol.pc.type === "none") part = `<p>No source acts for t &gt; 0, so the particular solution is zero.</p>`;
+  else if (sol.pc.type === "dc") part = `<p>The source is dc, so set ω = 0: H(0) = ${fmt(sol.n0)}/${fmt(sol.a0)} = ${fmt(sol.pc.H0)}.</p><div class="eq">${sym},p(t) = H(0)·${fmt(sol.pc.U)} = ${fmt(sol.pc.K)} ${un}</div>${Math.abs(sol.pc.K) < 1e-12 ? "<p>H(0) = 0 here, so the forced part vanishes, exactly as on slide 34.</p>" : ""}`;
+  else part = `<p>Insert s = jω = j${fmt(sol.pc.w)} into H(s): H(j${fmt(sol.pc.w)}) = ${fmt(sol.pc.Hr)} ${sol.pc.Hi < 0 ? MINUS : "+"} j${fmt(Math.abs(sol.pc.Hi))} (|H| = ${fmt(sol.pc.mag, 3)}, ∠H = ${fmt((sol.pc.ph * 180) / Math.PI, 3)}°). The phasor V = ${fmt(sol.pc.U)}·H gives</p><div class="eq">${sym},p(t) = ${joinTerms([[sol.pc.ca, `cos(${fmt(sol.pc.w)}t)`], [sol.pc.cb, `sin(${fmt(sol.pc.w)}t)`]])} ${un}</div>`;
+  let consts;
+  const yp0 = sol.y0 - sol.h0, dyp0 = sol.dy0 - sol.dh0;
+  const rhs = `${sym}(0${sp}) − ${sym},p(0) = ${fmt(sol.y0)} − ${fmt(yp0)} = ${fmt(sol.h0)}`;
+  const rhs2 = `${sym}′(0${sp}) − ${sym},p′(0) = ${fmt(sol.dy0)} − ${fmt(dyp0)} = ${fmt(sol.dh0)}`;
+  if (sol.kind === "over") consts = `<div class="eq">A + B = ${rhs}</div><div class="eq">s₁A + s₂B = ${rhs2}</div><p>Two equations, two unknowns (the slides solve this with a 2×2 matrix inverse): A = ${fmt(sol.K1)}, B = ${fmt(sol.K2)}.</p>`;
+  if (sol.kind === "critical") consts = `<div class="eq">A = ${rhs}</div><div class="eq">sA + B = ${rhs2}</div><p>So A = ${fmt(sol.K1)} and B = ${fmt(sol.dh0)} − (${fmt(sol.s1)})(${fmt(sol.K1)}) = ${fmt(sol.K2)}.</p>`;
+  if (sol.kind === "under") consts = `<div class="eq">A = ${rhs}</div><div class="eq">−αA + ω<sub>d</sub>B = ${rhs2}</div><p>So A = ${fmt(sol.K1)} and B = (${fmt(sol.dh0)} + ${fmt(sol.alpha)}·${fmt(sol.K1)}) / ${fmt(sol.wd)} = ${fmt(sol.K2)}.</p>`;
+  const steps = [
+    ["Get the circuit", `<p>${c.name} (${c.slide}). Solving for ${sym}(t).</p>`],
+    ["Natural initial conditions (t &lt; 0)", `<p>${c.pre(p)}</p><div class="eq">${stLines}</div><p class="note">Capacitor voltages and inductor currents cannot jump, so the 0<sup>−</sup> and 0<sup>+</sup> values match.</p>`],
+    ["Needed initial conditions (t = 0<sup>+</sup>)", `<p>${c.post(p)}</p>${derivLines.map((l) => `<div class="eq">${l}</div>`).join("")}<p>For ${sym}: ${sym}(0${sp}) = ${fmt(sol.y0)} ${un} and ${sym}′(0${sp}) = ${fmt(sol.dy0)} ${un}/s. The dashed tangent on the time plot starts with exactly this slope.</p>`],
+    ["Transfer function (t &gt; 0)", `${c.tfNote ? `<p>${c.tfNote}</p>` : ""}<div class="eq">${hHtml}</div>`],
+    ["Characteristic equation and damping case", `<div class="eq">${polyStr(sol.a1, sol.a0)} = 0 &nbsp;→&nbsp; α = ${fmt(sol.alpha)} s⁻¹, ω₀ = ${fmt(sol.w0)} rad/s</div><p>Compare α² = ${fmt(sol.alpha ** 2)} with ω₀² = ${fmt(sol.w0 ** 2)}: α² ${cmp} ω₀², so the circuit is <b style="color:${caseColor(sol.kind)}">${caseName[sol.kind].toLowerCase()}</b>. Roots s = −α ± √(α² − ω₀²) = ${rootStr(sol)}.</p><div class="eq">${homog}</div>`],
+    ["Particular solution", part],
+    ["Fit the constants to the initial conditions", `${consts}<div class="eq final">${sym}(t) = ${solutionExpr(sol)} &nbsp;${un}, &nbsp; t &gt; 0</div>`],
+  ];
+  $("#steps").innerHTML = steps.map(([h, b]) => `<li><div><h4>${h}</h4>${b}</div></li>`).join("");
+}
+
+/* ---------------- S-PLANE TAB ---------------- */
+const spS = { z: 0.3, w: 1, ghost: true };
+const SPX = [-6, 1.2], SPY = [-4.4, 4.4];
+function spSys(z, w) { return { A: [[0, 1], [-w * w, -2 * z * w]], b: [0, w * w], c: [1, 0], x0: [0, 0], input: { type: "dc", U: 1 } }; }
+function setupSplane() {
+  const zr = $("#sp-z-r"), zn = $("#sp-z"), wr = $("#sp-w-r"), wn = $("#sp-w");
+  const sync = () => { zr.value = Math.round(spS.z * 100); zn.value = +spS.z.toFixed(3); wr.value = Math.round(spS.w * 100); wn.value = +spS.w.toFixed(3); };
+  zr.addEventListener("input", () => { spS.z = +zr.value / 100; sync(); renderSplane(); });
+  wr.addEventListener("input", () => { spS.w = +wr.value / 100; sync(); renderSplane(); });
+  zn.addEventListener("change", () => { const v = parseFloat(zn.value); if (v >= 0 && v <= 5) spS.z = v; sync(); renderSplane(); });
+  wn.addEventListener("change", () => { const v = parseFloat(wn.value); if (v > 0.05 && v <= 6) spS.w = v; sync(); renderSplane(); });
+  $("#sp-ghost").addEventListener("change", (e) => { spS.ghost = e.target.checked; renderSplane(); });
+  spS.sync = sync; sync();
+}
+function renderSplane() {
+  const { z, w } = spS; const sol = solve2(spSys(z, w)); const kc = caseColor(sol.kind);
+  const circ = []; for (let i = 0; i <= 120; i++) { const th = Math.PI / 2 + (Math.PI * i) / 120; circ.push([w * Math.cos(th), w * Math.sin(th)]); }
+  const series = [{ pts: circ, color: css("--muted"), w: 1, dash: "3 4" }];
+  const marks = [];
+  if (sol.kind === "under") {
+    series.push({ pts: [[0, 0], [-sol.alpha * 3, sol.wd * 3]], color: kc, w: 1, dash: "2 3", opacity: 0.7 });
+    series.push({ pts: [[0, 0], [-sol.alpha * 3, -sol.wd * 3]], color: kc, w: 1, dash: "2 3", opacity: 0.7 });
+    series.push({ pts: [[-sol.alpha, sol.wd], [-sol.alpha, 0]], color: kc, w: 1, dash: "4 3", opacity: 0.8 });
+    series.push({ pts: [[-sol.alpha, sol.wd], [0, sol.wd]], color: kc, w: 1, dash: "4 3", opacity: 0.8 });
+    marks.push({ x: -sol.alpha, y: 0, type: "dot", r: 0.1, color: kc, label: `−α = ${fmtP(-sol.alpha)}`, anchor: "middle", dx: 0, dy: 16 });
+    marks.push({ x: 0, y: sol.wd, type: "dot", r: 0.1, color: kc, label: `ω_d = ${fmtP(sol.wd)}`, dx: 6, dy: -6 });
+  }
+  marks.push({ x: -w * 0.71, y: w * 0.71, type: "dot", r: 0.1, color: css("--muted"), label: "ω₀", dx: -14, dy: -4 });
+  sol.roots.forEach((r, i) => marks.push({ x: r.re, y: r.im, type: "x", size: 8, color: kc, cls: "sp-drag",
+    label: (r.re < SPX[0]) ? `s = ${fmtP(r.re)} (off scale)` : sol.kind !== "under" && i === 1 && sol.kind === "critical" ? "" : "", dx: 10, dy: i ? 18 : -12 }));
+  const api = renderPlot($("#sp-plane"), { x: SPX, y: SPY, equal: true, height: 330, series, marks, xLabel: "σ  (s⁻¹)", yLabel: "jω  (rad/s)", aria: "draggable s-plane" });
+  const svg = api.svg; svg.style.touchAction = "none"; svg.style.cursor = "crosshair";
+  let drag = false;
+  const move = (e) => {
+    const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) * (api.W / r.width), py = (e.clientY - r.top) * (api.H / r.height);
+    let sg = Math.min(api.iX(px), 0), om = Math.abs(api.iY(py));
+    let ww = Math.hypot(sg, om); ww = Math.max(0.3, Math.min(4, ww));
+    const zz = om < 0.04 ? 1 : Math.min(1, -sg / Math.hypot(sg, om));
+    spS.w = +ww.toFixed(2); spS.z = +zz.toFixed(2); spS.sync(); renderSplane();
+  };
+  svg.addEventListener("pointerdown", (e) => { drag = true; svg.setPointerCapture(e.pointerId); move(e); });
+  svg.addEventListener("pointermove", (e) => { if (drag) move(e); });
+  svg.addEventListener("pointerup", () => { drag = false; });
+  if (spS.dragging) {}
+
+  // step response
+  const T = 20, N = 800, pts = [];
+  for (let i = 0; i <= N; i++) { const t = (T * i) / N; pts.push([t, sol.y(t)]); }
+  const sr = [];
+  if (spS.ghost) for (const gz of [0.1, 0.3, 0.5, 0.7, 1, 2]) {
+    if (Math.abs(gz - z) < 0.005) continue; const g = solve2(spSys(gz, w)); const gp = []; for (let i = 0; i <= 400; i++) { const t = (T * i) / 400; gp.push([t, g.y(t)]); }
+    sr.push({ pts: gp, color: css("--muted"), w: 1, opacity: 0.45, label: `ζ=${gz}`, labelAt: Math.round(400 * Math.min(0.97, (gz >= 1 ? 2.2 : 1.1) * Math.PI / Math.max(g.wd || w, 0.2) / T + 0.04)) });
+  }
+  sr.push({ pts, color: kc, w: 2.6 });
+  const ymax = Math.max(1.2, ...pts.map((q) => q[1])) + 0.05;
+  renderPlot($("#sp-step"), { x: [0, T], y: [Math.min(0, ...pts.map((q) => q[1])) - 0.05, ymax], height: 300, series: sr,
+    hlines: [{ y: 1, color: css("--muted"), dash: "4 4", label: "final value" }, { y: 1.02, color: css("--line") }, { y: 0.98, color: css("--line") }],
+    xLabel: "t (s)", yLabel: "step response y(t)", aria: "step response",
+    hover: (t) => `<div><span>t</span><span>${fmtP(t)} s</span></div><div><span>y</span><span>${fmtP(sol.y(t))}</span></div>` });
+
+  // metrics
+  const ys = pts.map((q) => q[1]); const pk = Math.max(...ys); const ip = ys.indexOf(pk);
+  const os = Math.max(0, (pk - 1) * 100);
+  const t10 = pts.find((q) => q[1] >= 0.1), t90 = pts.find((q) => q[1] >= 0.9);
+  let ts = null; for (let i = pts.length - 1; i >= 0; i--) if (Math.abs(pts[i][1] - 1) > 0.02) { ts = i === pts.length - 1 ? null : pts[i + 1][0]; break; }
+  if (ts === null && Math.abs(pts[pts.length - 1][1] - 1) > 0.02) ts = Infinity;
+  const tsStr = ts === Infinity ? "&gt; 20 s" : ts === null ? "0" : fmt(ts, 3) + " s";
+  const ms = [["Case", `<span style="color:${kc};font-weight:600">${caseName[sol.kind]}</span>`], ["Overshoot", os > 0.05 ? fmt(os, 3) + " %" : "none"], ["Peak time", os > 0.05 ? fmt(pts[ip][0], 3) + " s" : "—"], ["Rise time 10–90 %", t10 && t90 ? fmt(t90[0] - t10[0], 3) + " s" : "&gt; 20 s"], ["2 % settling", tsStr], ["Q = 1/(2ζ)", z > 0 ? fmt(1 / (2 * z), 3) : "∞"]];
+  $("#sp-metrics").innerHTML = ms.map(([k, v]) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+  const R = 2 * z * w, C = 1 / (w * w);
+  $("#sp-rlc").innerHTML = `As a series RLC with L = 1 H this is C = 1/ω₀² = ${fmt(C, 3)} F and R = 2ζω₀L = ${fmt(R, 3)} Ω, and y(t) is v<sub>C</sub> after a 1 V step. ${sol.kind === "under" ? `Predicted overshoot e<sup>−πζ/√(1−ζ²)</sup> = ${fmt(100 * Math.exp((-Math.PI * z) / Math.sqrt(1 - z * z)), 3)} %.` : ""}`;
+}
+
+/* ---------------- ENERGY TAB ---------------- */
+const enS = { v: { V0: 10, R: 0.4, L: 1, C: 1 }, slideIC: false, t: 0, playing: false, speed: 1, sim: null };
+const enCirc = CIRCUITS[0];
+function simEnergy() {
+  const { V0, R, L, C } = enS.v; const iL0 = enS.slideIC ? V0 / R : 0;
+  const sol = solve2({ A: [[0, -1 / C], [1 / L, -R / L]], b: [0, 0], c: [1, 0], x0: [V0, iL0], input: { type: "none" } });
+  const T = +Math.min(settleTime(sol) * 0.6, 60).toPrecision(2);
+  const N = 1500, dt = T / N; let x = [V0, iL0], ER = 0; const out = [];
+  const f = (s) => [-s[1] / C, (s[0] - R * s[1]) / L];
+  for (let i = 0; i <= N; i++) {
+    const EC = 0.5 * C * x[0] ** 2, EL = 0.5 * L * x[1] ** 2; out.push({ t: i * dt, v: x[0], i: x[1], EC, EL, ER });
+    const k1 = f(x), k2 = f([x[0] + dt / 2 * k1[0], x[1] + dt / 2 * k1[1]]), k3 = f([x[0] + dt / 2 * k2[0], x[1] + dt / 2 * k2[1]]), k4 = f([x[0] + dt * k3[0], x[1] + dt * k3[1]]);
+    const xn = [x[0] + dt / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]), x[1] + dt / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])];
+    ER += R * dt * (x[1] ** 2 + 4 * ((x[1] + xn[1]) / 2) ** 2 + xn[1] ** 2) / 6; x = xn;
+  }
+  enS.sim = { out, T, sol, E0: out[0].EC + out[0].EL, vmax: Math.max(...out.map((o) => Math.abs(o.v))) || 1 };
+}
+let enPlotApi = null;
+function setupEnergy() {
+  $("#en-presets").innerHTML = enCirc.presets.map((p, i) => `<button class="chipbtn" data-i="${i}"><span class="sw" style="background:${caseColor(p.k)}"></span>${p.n} <span class="sub">${p.s}</span></button>`).join("");
+  const setters = {};
+  $("#en-presets").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { const pr = enCirc.presets[+b.dataset.i]; Object.assign(enS.v, pr.v); for (const k in pr.v) setters[k]?.(pr.v[k]); enRestart(); }));
+  for (const p of enCirc.params) { const { row, set } = paramRow(p, enS.v[p.k], (k, v) => { enS.v[k] = v; enRestart(); }, "en"); $("#en-params").appendChild(row); setters[p.k] = set; }
+  $("#en-slideic").addEventListener("change", (e) => { enS.slideIC = e.target.checked; enRestart(); });
+  $("#en-play").addEventListener("click", () => { if (enS.t >= enS.sim.T) enS.t = 0; enS.playing = !enS.playing; $("#en-play").textContent = enS.playing ? "Pause" : "Play"; if (enS.playing) { enS.lastTs = null; requestAnimationFrame(enTick); } });
+  $("#en-reset").addEventListener("click", () => { enS.t = 0; enDrawFrame(); });
+  $("#en-speed").addEventListener("input", (e) => { enS.speed = +e.target.value; });
+  $("#en-bars").innerHTML = [["Stored in C · ½Cv²", "--c-energy", "ec"], ["Stored in L · ½Li²", "--l-energy", "el"], ["Burned in R · ∫Ri²dt", "--r-energy", "er"]]
+    .map(([n, c, id]) => `<div class="bar"><span>${n}</span><div class="track"><div class="fill" id="bar-${id}" style="background:var(${c})"></div></div><span class="num" id="num-${id}"></span></div>`).join("");
+  enRestart();
+}
+function enRestart() { simEnergy(); enS.t = 0; renderEnergyPlot(); enDrawFrame(); }
+function renderEnergyPlot() {
+  const { out, T, E0, sol } = enS.sim; const step = Math.max(1, Math.floor(out.length / 500)); const s = out.filter((_, i) => i % step === 0);
+  enPlotApi = renderPlot($("#en-plot"), { x: [0, T], y: [0, E0 * 1.08], height: 240, xLabel: "t (s)", yLabel: "energy (J)", cursor: 0, aria: "energy over time",
+    bands: [{ pts: s.map((o) => [o.t, 0, o.EC]), color: css("--c-energy"), opacity: 0.55 }, { pts: s.map((o) => [o.t, o.EC, o.EC + o.EL]), color: css("--l-energy"), opacity: 0.55 }, { pts: s.map((o) => [o.t, o.EC + o.EL, o.EC + o.EL + o.ER]), color: css("--r-energy"), opacity: 0.4 }],
+    hlines: [{ y: E0, color: css("--muted"), dash: "4 4", label: `total = ${fmtP(E0)} J` }],
+    hover: (t) => { const o = out[Math.min(out.length - 1, Math.round((t / T) * (out.length - 1)))]; return `<div><span>t</span><span>${fmtP(t)} s</span></div><div><span>C</span><span>${fmtP(o.EC)} J</span></div><div><span>L</span><span>${fmtP(o.EL)} J</span></div><div><span>R</span><span>${fmtP(o.ER)} J</span></div>`; } });
+  $("#en-time").textContent = `${caseName[sol.kind]} · window ${fmtP(T)} s`;
+  const half = out.find((o) => o.ER >= E0 / 2);
+  $("#en-note").innerHTML = `${sol.kind === "under" ? "Blue and gold trade places each half-cycle: the field energy in C turns into magnetic energy in L and back, losing a slice to R every time current flows." : "With this much resistance the energy never gets a chance to slosh back: it drains into R in one smooth pass."} Half of the starting ${fmt(E0, 3)} J is gone by t ≈ ${half ? fmt(half.t, 3) : "—"} s.`;
+}
+function enTick(ts) {
+  if (!enS.playing) return;
+  if (enS.lastTs != null) enS.t += ((ts - enS.lastTs) / 1000) * enS.speed * (enS.sim.T / 10);
+  enS.lastTs = ts;
+  if (enS.t >= enS.sim.T) { enS.t = enS.sim.T; enS.playing = false; $("#en-play").textContent = "Play"; }
+  enDrawFrame();
+  if (enS.playing) requestAnimationFrame(enTick);
+}
+function enDrawFrame() {
+  const { out, T, E0, vmax } = enS.sim; const o = out[Math.min(out.length - 1, Math.round((enS.t / T) * (out.length - 1)))];
+  for (const [id, v] of [["ec", o.EC], ["el", o.EL], ["er", o.ER]]) { $("#bar-" + id).style.width = (100 * v / E0).toFixed(1) + "%"; $("#num-" + id).textContent = fmtP(v) + " J"; }
+  if (enPlotApi) { const cl = enPlotApi.svg.querySelector(".cursor"); if (cl) { const x = enPlotApi.X(enS.t); cl.setAttribute("x1", x); cl.setAttribute("x2", x); } }
+  // mass-spring-damper
+  const cv = $("#msd"); const dpr = window.devicePixelRatio || 1; const W = cv.clientWidth || 600, H = 190;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const ink = css("--ink"), mut = css("--muted");
+  const wallX = 24, eq = W * 0.56, amp = Math.min(W * 0.28, 220), x = eq + (o.v / vmax) * amp, mw = 64, top = 52, bot = 138;
+  g.fillStyle = mut; g.fillRect(wallX - 8, 26, 8, 130); g.strokeStyle = mut; g.lineWidth = 1;
+  for (let y = 30; y < 156; y += 10) { g.beginPath(); g.moveTo(wallX - 8, y + 6); g.lineTo(wallX - 16, y + 12); g.stroke(); }
+  g.beginPath(); g.moveTo(wallX, 156); g.lineTo(W - 10, 156); g.stroke();
+  // equilibrium marker
+  g.setLineDash([4, 4]); g.beginPath(); g.moveTo(eq, 20); g.lineTo(eq, 160); g.stroke(); g.setLineDash([]);
+  g.fillStyle = mut; g.font = "11px " + css("--font-mono"); g.textAlign = "center"; g.fillText("q = 0", eq, 15);
+  // spring
+  const left = x - mw / 2; const sy = 76; g.strokeStyle = css("--c-energy"); g.lineWidth = 2; g.beginPath(); g.moveTo(wallX, sy);
+  const n = 12, sx0 = wallX + 14, sx1 = left - 10; g.lineTo(sx0, sy);
+  for (let i = 0; i < n; i++) g.lineTo(sx0 + ((sx1 - sx0) * (i + 0.5)) / n, sy + (i % 2 ? -10 : 10));
+  g.lineTo(sx1, sy); g.lineTo(left, sy); g.stroke();
+  // dashpot
+  const dy = 118; g.strokeStyle = css("--r-energy"); g.lineWidth = 2; const cylX = wallX + 40, cylW = Math.max(40, (left - wallX) * 0.45);
+  g.beginPath(); g.moveTo(wallX, dy); g.lineTo(cylX, dy); g.stroke();
+  g.beginPath(); g.moveTo(cylX, dy - 11); g.lineTo(cylX + cylW, dy - 11); g.moveTo(cylX, dy + 11); g.lineTo(cylX + cylW, dy + 11); g.moveTo(cylX, dy - 11); g.lineTo(cylX, dy + 11); g.stroke();
+  const pist = Math.min(cylX + cylW - 4, Math.max(cylX + 6, left - 30)); g.beginPath(); g.moveTo(pist, dy - 8); g.lineTo(pist, dy + 8); g.moveTo(pist, dy); g.lineTo(left, dy); g.stroke();
+  // mass
+  g.fillStyle = css("--l-energy"); g.globalAlpha = 0.25 + 0.75 * Math.min(1, o.EL / Math.max(E0, 1e-12)); g.fillRect(left, top, mw, bot - top); g.globalAlpha = 1;
+  g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(left, top, mw, bot - top);
+  g.fillStyle = ink; g.font = "600 12px " + css("--font-body"); g.fillText("L", x, (top + bot) / 2 + 4);
+  // velocity arrow
+  const vel = o.i; const al = Math.max(-80, Math.min(80, (-vel / (vmax / Math.sqrt(enS.v.L * enS.v.C) || 1)) * 60));
+  if (Math.abs(al) > 3) { g.strokeStyle = ink; g.fillStyle = ink; g.beginPath(); g.moveTo(x, top - 12); g.lineTo(x + al, top - 12); g.stroke(); g.beginPath(); const sgn = Math.sign(al); g.moveTo(x + al, top - 12); g.lineTo(x + al - sgn * 7, top - 17); g.lineTo(x + al - sgn * 7, top - 7); g.fill(); }
+  g.font = "11px " + css("--font-body"); g.fillStyle = css("--c-energy"); g.textAlign = "left"; g.fillText("spring = 1/C", wallX + 8, sy - 16);
+  g.fillStyle = css("--r-energy"); g.fillText("damper = R", wallX + 8, dy + 28);
+  g.fillStyle = mut; g.textAlign = "right"; g.fillText(`t = ${fmtP(enS.t)} s   v_C = ${fmtP(o.v)} V   i_L = ${fmtP(o.i)} A`, W - 10, 180);
+}
+
+/* ---------------- QUIZ ---------------- */
+const qz = { right: 0, total: 0, streak: 0, q: null, answered: false };
+function newQuestion() {
+  const type = Math.random() < 0.5 ? "series" : "parallel";
+  const k = pick([0.5, 1, 2, 4, 5, 10]), C = pick([0.01, 0.04, 0.1, 0.25, 0.5, 1]); const L = +(k * k * C).toPrecision(6);
+  const kind = pick(["over", "critical", "under", "over", "under"]);
+  const Rc = type === "series" ? 2 * k : k / 2;
+  let f = kind === "critical" ? 1 : kind === "over" ? pick([1.5, 2, 3, 4]) : pick([0.2, 0.3, 0.5, 0.7]);
+  if (type === "parallel" && kind !== "critical") f = 1 / f;
+  const R = +(Rc * f).toPrecision(3);
+  const p = type === "series" ? { V0: 10, R, L, C } : { Is: 1, R, L, C };
+  const c = CIRCUITS.find((cc) => cc.id === type); const sol = solve2(sysFor(c, p, 0));
+  qz.q = { type, p, c, sol }; qz.answered = false;
+  $("#qz-schem").innerHTML = c.schem(p);
+  $("#qz-prompt").innerHTML = type === "series" ? "Series RLC after the switch opens. Is the natural response over-, critically or underdamped?" : "Parallel RLC driven by a current step. Is i<sub>L</sub>(t) over-, critically or underdamped?";
+  $("#qz-answers").querySelectorAll("button").forEach((b) => { b.className = ""; b.disabled = false; });
+  $("#qz-hinttext").hidden = true;
+  $("#qz-hinttext").innerHTML = type === "series" ? "Series: α = R/(2L), ω₀ = 1/√(LC). Critical when R = 2√(L/C)." : "Parallel: α = 1/(2RC), ω₀ = 1/√(LC). Critical when R = ½√(L/C). Bigger R means less damping here.";
+  $("#qz-verdict").textContent = "Pick an answer to see the working.";
+  $("#qz-work").innerHTML = ""; $("#qz-plot").innerHTML = "";
+}
+function answer(kind) {
+  if (qz.answered) return; qz.answered = true;
+  const { type, p, sol, c } = qz.q; const ok = kind === sol.kind;
+  qz.total++; if (ok) { qz.right++; qz.streak++; } else qz.streak = 0;
+  $("#qz-score").textContent = `${qz.right} / ${qz.total}${qz.streak > 1 ? ` · streak ${qz.streak}` : ""}`;
+  $("#qz-answers").querySelectorAll("button").forEach((b) => { b.disabled = true; if (b.dataset.case === kind) b.className = ok ? "picked-right" : "picked-wrong"; if (!ok && b.dataset.case === sol.kind) b.className = "picked-right"; });
+  $("#qz-verdict").innerHTML = ok ? `Correct: <span style="color:${caseColor(sol.kind)}">${caseName[sol.kind].toLowerCase()}</span>` : `Not quite. It is <span style="color:${caseColor(sol.kind)}">${caseName[sol.kind].toLowerCase()}</span>`;
+  const aF = type === "series" ? `α = R/(2L) = ${fmt(p.R)}/(2·${fmt(p.L)}) = ${fmt(sol.alpha)}` : `α = 1/(2RC) = 1/(2·${fmt(p.R)}·${fmt(p.C)}) = ${fmt(sol.alpha)}`;
+  const cmp = sol.kind === "under" ? "&lt;" : sol.kind === "over" ? "&gt;" : "=";
+  const Rc = type === "series" ? 2 * Math.sqrt(p.L / p.C) : 0.5 * Math.sqrt(p.L / p.C);
+  $("#qz-work").innerHTML = `<div class="eq">${aF} s⁻¹</div><div class="eq">ω₀ = 1/√(LC) = 1/√(${fmt(p.L)}·${fmt(p.C)}) = ${fmt(sol.w0)} rad/s</div><p>α ${cmp} ω₀, so the roots are ${rootStr(sol)}. The critical resistance for this L and C is ${fmt(Rc)} Ω; this circuit has ${fmt(p.R)} Ω.</p>`;
+  const T = settleTime(sol), pts = []; for (let i = 0; i <= 500; i++) { const t = (T * i) / 500; pts.push([t, sol.y(t)]); }
+  const ys = pts.map((q) => q[1]);
+  renderPlot($("#qz-plot"), { x: [0, T], y: padRange(Math.min(0, ...ys), Math.max(0, ...ys)), height: 240, series: [{ pts, color: caseColor(sol.kind).startsWith("var") ? css(sol.kind === "critical" ? "--crit" : "--" + sol.kind) : "", w: 2.4 }], xLabel: "t (s)", yLabel: type === "series" ? "v_C(t)  [V]" : "i_L(t)  [A]", aria: "quiz response" });
+}
+function setupQuiz() {
+  $("#qz-answers").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => answer(b.dataset.case)));
+  $("#qz-next").addEventListener("click", newQuestion);
+  $("#qz-hint").addEventListener("click", () => { $("#qz-hinttext").hidden = false; });
+  newQuestion();
+}
+
+/* ---------------- routing & boot ---------------- */
+const VIEWS = ["explorer", "splane", "energy", "quiz"];
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "explorer";
+  for (const id of VIEWS) $("#view-" + id).hidden = id !== v;
+  document.querySelectorAll("nav.tabs a").forEach((a) => a.toggleAttribute("aria-current", a.dataset.view === v) || (a.dataset.view === v && a.setAttribute("aria-current", "page")));
+  document.querySelectorAll("nav.tabs a").forEach((a) => { if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  renderView(v);
+}
+function renderView(v) {
+  if (v === "explorer") renderExplorer();
+  if (v === "splane") renderSplane();
+  if (v === "energy") { renderEnergyPlot(); enDrawFrame(); }
+  if (v === "quiz" && qz.answered) { /* keep */ }
+}
+setupExplorer(); setupSplane(); setupEnergy(); setupQuiz();
+window.addEventListener("hashchange", route);
+route();
+let rsT = null; let lastW = 0;
+new ResizeObserver(() => { const w = document.body.clientWidth; if (w === lastW) return; lastW = w; clearTimeout(rsT); rsT = setTimeout(() => renderView(VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "explorer"), 120); }).observe(document.body);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => route());
+</script>
