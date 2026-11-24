@@ -15,8 +15,11 @@ Live copy: https://claude.ai/artifact/PTM7Q55DfW74XcntHRGmai
   worked solution that follows the slide algorithm step by step.
 - **Poles & damping**: drag a pole in the s-plane and see the step response, overshoot,
   rise time and settling time change.
-- **Where the energy goes**: series RLC energy split between C, L and R, with an
-  animated mass-spring-damper analogy.
+- **Where the energy goes**: energy split between C, L and R, with an animated
+  mass-spring-damper. Series mode uses the voltage ↔ force mapping (L = mass,
+  1/C = spring, R = damper); parallel mode uses the dual current ↔ force mapping
+  (C = mass, 1/L = spring, 1/R = damper), which shows why a larger parallel R
+  gives less damping.
 - **Damping quiz**: random series and parallel RLC circuits; pick the damping case and
   see the working.
 

@@ -162,6 +162,9 @@ table.analogy { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 table.analogy th, table.analogy td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
 table.analogy th { font-weight: 600; color: var(--muted); font-size: 0.78rem; }
 .playrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg .chipbtn { padding: 6px 14px; font-size: 0.88rem; }
+.seg .chipbtn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
 
 /* quiz */
 .qz-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -293,25 +296,22 @@ table.analogy th { font-weight: 600; color: var(--muted); font-size: 0.78rem; }
   <section class="view" id="view-energy" hidden>
     <div class="en-grid">
       <aside class="card controls">
+        <div class="seg" role="group" aria-label="Circuit">
+          <button class="chipbtn" data-mode="series" aria-pressed="true">Series RLC</button>
+          <button class="chipbtn" data-mode="parallel" aria-pressed="false">Parallel RLC</button>
+        </div>
         <div>
-          <div class="eyebrow">Series RLC · slides 3–11</div>
-          <p class="cdesc" style="margin-top:4px">Same circuit as the series examples. At t = 0 the capacitor holds ½CV₀² and the inductor holds ½L·i<sub>L</sub>(0)². After that the energy sloshes between C and L, and R turns some into heat on every pass.</p>
+          <div class="eyebrow" id="en-eyebrow"></div>
+          <p class="cdesc" id="en-desc" style="margin-top:4px"></p>
         </div>
         <div class="presets" id="en-presets"></div>
         <div id="en-params" class="controls"></div>
-        <label for="en-slideic" style="font-size:0.85rem;color:var(--muted);display:flex;gap:6px;align-items:baseline"><input type="checkbox" id="en-slideic"><span>Use the slides' initial current, i<sub>L</sub>(0) = V₀/R. Untick to start with only the capacitor charged.</span></label>
+        <label for="en-slideic" style="font-size:0.85rem;color:var(--muted);display:flex;gap:6px;align-items:baseline"><input type="checkbox" id="en-slideic"><span id="en-iclabel"></span></label>
         <table class="analogy">
           <thead><tr><th>Circuit</th><th>Mass–spring–damper</th></tr></thead>
-          <tbody>
-            <tr><td>charge q = Cv<sub>C</sub></td><td>position x</td></tr>
-            <tr><td>current i</td><td>velocity v</td></tr>
-            <tr><td>inductance L</td><td>mass m</td></tr>
-            <tr><td>1/C</td><td>spring stiffness k</td></tr>
-            <tr><td>resistance R</td><td>damping b</td></tr>
-            <tr><td>½Cv<sub>C</sub>² (electric field)</td><td>½kx² (spring)</td></tr>
-            <tr><td>½Li² (magnetic field)</td><td>½mv² (motion)</td></tr>
-          </tbody>
+          <tbody id="en-analogy"></tbody>
         </table>
+        <p class="note" id="en-mapnote" style="margin-top:0"></p>
       </aside>
       <div class="ex-main">
         <div class="card">
@@ -1010,46 +1010,104 @@ function renderSplane() {
 }
 
 /* ---------------- ENERGY TAB ---------------- */
-const enS = { v: { V0: 10, R: 0.4, L: 1, C: 1 }, slideIC: false, t: 0, playing: false, speed: 1, sim: null };
-const enCirc = CIRCUITS[0];
+/* Two mechanical mappings share one simulator.
+   series   (voltage ↔ force):  L·q″ + R·q′ + q/C = 0   → mass L, spring 1/C, damper R, position q, velocity i
+   parallel (current ↔ force):  C·λ″ + λ′/R + λ/L = 0   → mass C, spring 1/L, damper 1/R, position λ = L·iL, velocity v
+   State is always x = [v_C, i_L]. */
+const EN_MODES = {
+  series: {
+    eyebrow: "Series RLC · slides 3–11",
+    desc: "Same circuit as the series examples. At t = 0 the capacitor holds ½CV₀² and the inductor holds ½L·i<sub>L</sub>(0)². After that the energy sloshes between C and L, and R turns some into heat on every pass.",
+    params: CIRCUITS[0].params,
+    presets: CIRCUITS[0].presets,
+    defaults: { V0: 10, R: 0.4, L: 1, C: 1 },
+    icLabel: "Use the slides' initial current, i<sub>L</sub>(0) = V₀/R. Untick to start with only the capacitor charged.",
+    x0: (p, ic) => [p.V0, ic ? p.V0 / p.R : 0],
+    A: (p) => [[0, -1 / p.C], [1 / p.L, -p.R / p.L]],
+    pR: (s, p) => p.R * s[1] ** 2,
+    rLabel: "Burned in R · ∫Ri²dt",
+    analogy: [["charge q = Cv<sub>C</sub>", "position x"], ["current i", "velocity v"], ["inductance L", "mass m"], ["1/C", "spring stiffness k"], ["resistance R", "damping b"], ["½Cv<sub>C</sub>² (electric field)", "½kx² (spring)"], ["½Li² (magnetic field)", "½mv² (motion)"]],
+    mapNote: "Voltage ↔ force mapping. KVL gives L·q″ + R·q′ + q/C = 0, the same equation as m·x″ + b·x′ + k·x = 0. More R is a stiffer damper, so more damping.",
+    massLabel: "L", springLabel: "spring = 1/C", damperLabel: "damper = R", eqLabel: "q = 0",
+    springVar: "--c-energy", massVar: "--l-energy", kinetic: "EL",
+    pos: (o, s) => o.v / s.vmax,
+    vel: (o, s, p) => -o.i / ((p.C * s.vmax) / Math.sqrt(p.L * p.C)),
+    noteUnder: "Blue and gold trade places each half-cycle: the field energy in C turns into magnetic energy in L and back, losing a slice to R every time current flows.",
+    noteOver: "With this much series resistance the energy never gets a chance to slosh back: it drains into R in one smooth pass.",
+  },
+  parallel: {
+    eyebrow: "Parallel RLC · slides 14–25",
+    desc: "R, L and C share one voltage. No source is connected, so this is the natural response of the parallel circuit, with the same characteristic equation as the slide examples. At t = 0 the capacitor holds ½CV₀²; the energy then sloshes between C and L while R bleeds it off.",
+    params: [{ k: "V0", label: "V<sub>0</sub>", unit: "V", min: 1, max: 20, step: 0.5 }, P_R("R", "R", 0.02, 20), P_L("L", "L"), P_C("C", "C")],
+    presets: [{ n: "Critical", s: "slide 15", k: "critical", v: { V0: 10, R: 0.5, L: 1, C: 1 } }, { n: "Over", s: "slide 18", k: "over", v: { V0: 10, R: 0.25, L: 1, C: 1 } }, { n: "Under", s: "slide 22", k: "under", v: { V0: 10, R: 1, L: 1, C: 1 } }],
+    defaults: { V0: 10, R: 2.5, L: 1, C: 1 },
+    icLabel: "Start with the same energy in L instead: i<sub>L</sub>(0) = V₀√(C/L) and v<sub>C</sub>(0) = 0. The spring starts stretched instead of the mass moving.",
+    x0: (p, ic) => (ic ? [0, p.V0 * Math.sqrt(p.C / p.L)] : [p.V0, 0]),
+    A: (p) => [[-1 / (p.R * p.C), -1 / p.C], [1 / p.L, 0]],
+    pR: (s, p) => s[0] ** 2 / p.R,
+    rLabel: "Burned in R · ∫v²/R dt",
+    analogy: [["flux λ = L·i<sub>L</sub>", "position x"], ["voltage v", "velocity v"], ["capacitance C", "mass m"], ["1/L", "spring stiffness k"], ["conductance 1/R", "damping b"], ["½Cv² (electric field)", "½mv² (motion)"], ["½Li<sub>L</sub>² (magnetic field)", "½kx² (spring)"]],
+    mapNote: "Dual (current ↔ force) mapping. KCL gives C·λ″ + λ′/R + λ/L = 0. The damper is 1/R, so a <em>larger</em> R is a weaker damper and the circuit rings more, the opposite of the series case.",
+    massLabel: "C", springLabel: "spring = 1/L", damperLabel: "damper = 1/R", eqLabel: "λ = 0",
+    springVar: "--l-energy", massVar: "--c-energy", kinetic: "EC",
+    pos: (o, s) => o.i / s.imax,
+    vel: (o, s, p) => o.v / ((p.L * s.imax) / Math.sqrt(p.L * p.C)),
+    noteUnder: "Blue and gold trade places each half-cycle, losing a slice to R whenever there is voltage across it. Here C is the moving mass, so the block is darkest when the capacitor is full and the spring (L) is relaxed.",
+    noteOver: "With this little parallel resistance, R shorts the energy away in one smooth pass before it can slosh back.",
+  },
+};
+const enS = { mode: "series", vals: { series: { ...EN_MODES.series.defaults }, parallel: { ...EN_MODES.parallel.defaults } }, ic: { series: false, parallel: false }, t: 0, playing: false, speed: 1, sim: null };
+const enP = () => enS.vals[enS.mode];
 function simEnergy() {
-  const { V0, R, L, C } = enS.v; const iL0 = enS.slideIC ? V0 / R : 0;
-  const sol = solve2({ A: [[0, -1 / C], [1 / L, -R / L]], b: [0, 0], c: [1, 0], x0: [V0, iL0], input: { type: "none" } });
+  const M = EN_MODES[enS.mode], p = enP(); const { L, C } = p;
+  const A = M.A(p), x0 = M.x0(p, enS.ic[enS.mode]);
+  const sol = solve2({ A, b: [0, 0], c: [1, 0], x0, input: { type: "none" } });
   const T = +Math.min(settleTime(sol) * 0.6, 60).toPrecision(2);
-  const N = 1500, dt = T / N; let x = [V0, iL0], ER = 0; const out = [];
-  const f = (s) => [-s[1] / C, (s[0] - R * s[1]) / L];
+  const N = 1500, dt = T / N; let x = x0.slice(), ER = 0; const out = [];
+  const f = (s) => [A[0][0] * s[0] + A[0][1] * s[1], A[1][0] * s[0] + A[1][1] * s[1]];
+  const pr = (s) => M.pR(s, p);
   for (let i = 0; i <= N; i++) {
     const EC = 0.5 * C * x[0] ** 2, EL = 0.5 * L * x[1] ** 2; out.push({ t: i * dt, v: x[0], i: x[1], EC, EL, ER });
     const k1 = f(x), k2 = f([x[0] + dt / 2 * k1[0], x[1] + dt / 2 * k1[1]]), k3 = f([x[0] + dt / 2 * k2[0], x[1] + dt / 2 * k2[1]]), k4 = f([x[0] + dt * k3[0], x[1] + dt * k3[1]]);
     const xn = [x[0] + dt / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]), x[1] + dt / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])];
-    ER += R * dt * (x[1] ** 2 + 4 * ((x[1] + xn[1]) / 2) ** 2 + xn[1] ** 2) / 6; x = xn;
+    ER += dt * (pr(x) + 4 * pr([(x[0] + xn[0]) / 2, (x[1] + xn[1]) / 2]) + pr(xn)) / 6; x = xn;
   }
-  enS.sim = { out, T, sol, E0: out[0].EC + out[0].EL, vmax: Math.max(...out.map((o) => Math.abs(o.v))) || 1 };
+  enS.sim = { out, T, sol, E0: out[0].EC + out[0].EL, vmax: Math.max(...out.map((o) => Math.abs(o.v))) || 1, imax: Math.max(...out.map((o) => Math.abs(o.i))) || 1 };
 }
-let enPlotApi = null;
+let enPlotApi = null, enSetters = {};
+function enSetMode(mode) {
+  enS.mode = mode; const M = EN_MODES[mode], p = enP();
+  document.querySelectorAll("#view-energy .seg .chipbtn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+  $("#en-eyebrow").textContent = M.eyebrow; $("#en-desc").innerHTML = M.desc;
+  $("#en-iclabel").innerHTML = M.icLabel; $("#en-slideic").checked = enS.ic[mode];
+  $("#en-analogy").innerHTML = M.analogy.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("");
+  $("#en-mapnote").innerHTML = M.mapNote; $("#lab-er").textContent = M.rLabel;
+  $("#en-presets").innerHTML = M.presets.map((pr, i) => `<button class="chipbtn" data-i="${i}"><span class="sw" style="background:${caseColor(pr.k)}"></span>${pr.n} <span class="sub">${pr.s}</span></button>`).join("");
+  $("#en-params").innerHTML = ""; enSetters = {};
+  for (const pp of M.params) { const { row, set } = paramRow(pp, p[pp.k], (k, v) => { enP()[k] = v; enRestart(); }, "en"); $("#en-params").appendChild(row); enSetters[pp.k] = set; }
+  $("#en-presets").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { const pr = M.presets[+b.dataset.i]; Object.assign(enP(), pr.v); for (const k in pr.v) enSetters[k]?.(pr.v[k]); enRestart(); }));
+  enRestart();
+}
 function setupEnergy() {
-  $("#en-presets").innerHTML = enCirc.presets.map((p, i) => `<button class="chipbtn" data-i="${i}"><span class="sw" style="background:${caseColor(p.k)}"></span>${p.n} <span class="sub">${p.s}</span></button>`).join("");
-  const setters = {};
-  $("#en-presets").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { const pr = enCirc.presets[+b.dataset.i]; Object.assign(enS.v, pr.v); for (const k in pr.v) setters[k]?.(pr.v[k]); enRestart(); }));
-  for (const p of enCirc.params) { const { row, set } = paramRow(p, enS.v[p.k], (k, v) => { enS.v[k] = v; enRestart(); }, "en"); $("#en-params").appendChild(row); setters[p.k] = set; }
-  $("#en-slideic").addEventListener("change", (e) => { enS.slideIC = e.target.checked; enRestart(); });
+  $("#en-bars").innerHTML = [["Stored in C · ½Cv²", "--c-energy", "ec"], ["Stored in L · ½Li²", "--l-energy", "el"], ["Burned in R · ∫Ri²dt", "--r-energy", "er"]]
+    .map(([n, c, id]) => `<div class="bar"><span id="lab-${id}">${n}</span><div class="track"><div class="fill" id="bar-${id}" style="background:var(${c})"></div></div><span class="num" id="num-${id}"></span></div>`).join("");
+  document.querySelectorAll("#view-energy .seg .chipbtn").forEach((b) => b.addEventListener("click", () => { if (b.dataset.mode !== enS.mode) enSetMode(b.dataset.mode); }));
+  $("#en-slideic").addEventListener("change", (e) => { enS.ic[enS.mode] = e.target.checked; enRestart(); });
   $("#en-play").addEventListener("click", () => { if (enS.t >= enS.sim.T) enS.t = 0; enS.playing = !enS.playing; $("#en-play").textContent = enS.playing ? "Pause" : "Play"; if (enS.playing) { enS.lastTs = null; requestAnimationFrame(enTick); } });
   $("#en-reset").addEventListener("click", () => { enS.t = 0; enDrawFrame(); });
   $("#en-speed").addEventListener("input", (e) => { enS.speed = +e.target.value; });
-  $("#en-bars").innerHTML = [["Stored in C · ½Cv²", "--c-energy", "ec"], ["Stored in L · ½Li²", "--l-energy", "el"], ["Burned in R · ∫Ri²dt", "--r-energy", "er"]]
-    .map(([n, c, id]) => `<div class="bar"><span>${n}</span><div class="track"><div class="fill" id="bar-${id}" style="background:var(${c})"></div></div><span class="num" id="num-${id}"></span></div>`).join("");
-  enRestart();
+  enSetMode("series");
 }
 function enRestart() { simEnergy(); enS.t = 0; renderEnergyPlot(); enDrawFrame(); }
 function renderEnergyPlot() {
-  const { out, T, E0, sol } = enS.sim; const step = Math.max(1, Math.floor(out.length / 500)); const s = out.filter((_, i) => i % step === 0);
+  const { out, T, E0, sol } = enS.sim; const M = EN_MODES[enS.mode]; const step = Math.max(1, Math.floor(out.length / 500)); const s = out.filter((_, i) => i % step === 0);
   enPlotApi = renderPlot($("#en-plot"), { x: [0, T], y: [0, E0 * 1.08], height: 240, xLabel: "t (s)", yLabel: "energy (J)", cursor: 0, aria: "energy over time",
     bands: [{ pts: s.map((o) => [o.t, 0, o.EC]), color: css("--c-energy"), opacity: 0.55 }, { pts: s.map((o) => [o.t, o.EC, o.EC + o.EL]), color: css("--l-energy"), opacity: 0.55 }, { pts: s.map((o) => [o.t, o.EC + o.EL, o.EC + o.EL + o.ER]), color: css("--r-energy"), opacity: 0.4 }],
     hlines: [{ y: E0, color: css("--muted"), dash: "4 4", label: `total = ${fmtP(E0)} J` }],
     hover: (t) => { const o = out[Math.min(out.length - 1, Math.round((t / T) * (out.length - 1)))]; return `<div><span>t</span><span>${fmtP(t)} s</span></div><div><span>C</span><span>${fmtP(o.EC)} J</span></div><div><span>L</span><span>${fmtP(o.EL)} J</span></div><div><span>R</span><span>${fmtP(o.ER)} J</span></div>`; } });
-  $("#en-time").textContent = `${caseName[sol.kind]} · window ${fmtP(T)} s`;
+  $("#en-time").textContent = `${caseName[sol.kind]} · ζ = ${fmt(sol.zeta, 3)} · window ${fmtP(T)} s`;
   const half = out.find((o) => o.ER >= E0 / 2);
-  $("#en-note").innerHTML = `${sol.kind === "under" ? "Blue and gold trade places each half-cycle: the field energy in C turns into magnetic energy in L and back, losing a slice to R every time current flows." : "With this much resistance the energy never gets a chance to slosh back: it drains into R in one smooth pass."} Half of the starting ${fmt(E0, 3)} J is gone by t ≈ ${half ? fmt(half.t, 3) : "—"} s.`;
+  $("#en-note").innerHTML = `${sol.kind === "under" ? M.noteUnder : M.noteOver} Half of the starting ${fmt(E0, 3)} J is gone by t ≈ ${half ? fmt(half.t, 3) : "—"} s.`;
 }
 function enTick(ts) {
   if (!enS.playing) return;
@@ -1060,7 +1118,7 @@ function enTick(ts) {
   if (enS.playing) requestAnimationFrame(enTick);
 }
 function enDrawFrame() {
-  const { out, T, E0, vmax } = enS.sim; const o = out[Math.min(out.length - 1, Math.round((enS.t / T) * (out.length - 1)))];
+  const sim = enS.sim, { out, T, E0 } = sim, M = EN_MODES[enS.mode], p = enP(); const o = out[Math.min(out.length - 1, Math.round((enS.t / T) * (out.length - 1)))];
   for (const [id, v] of [["ec", o.EC], ["el", o.EL], ["er", o.ER]]) { $("#bar-" + id).style.width = (100 * v / E0).toFixed(1) + "%"; $("#num-" + id).textContent = fmtP(v) + " J"; }
   if (enPlotApi) { const cl = enPlotApi.svg.querySelector(".cursor"); if (cl) { const x = enPlotApi.X(enS.t); cl.setAttribute("x1", x); cl.setAttribute("x2", x); } }
   // mass-spring-damper
@@ -1068,15 +1126,15 @@ function enDrawFrame() {
   if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
   const ink = css("--ink"), mut = css("--muted");
-  const wallX = 24, eq = W * 0.56, amp = Math.min(W * 0.28, 220), x = eq + (o.v / vmax) * amp, mw = 64, top = 52, bot = 138;
+  const wallX = 24, eq = W * 0.56, amp = Math.min(W * 0.28, 220), x = eq + M.pos(o, sim) * amp, mw = 64, top = 52, bot = 138;
   g.fillStyle = mut; g.fillRect(wallX - 8, 26, 8, 130); g.strokeStyle = mut; g.lineWidth = 1;
   for (let y = 30; y < 156; y += 10) { g.beginPath(); g.moveTo(wallX - 8, y + 6); g.lineTo(wallX - 16, y + 12); g.stroke(); }
   g.beginPath(); g.moveTo(wallX, 156); g.lineTo(W - 10, 156); g.stroke();
   // equilibrium marker
   g.setLineDash([4, 4]); g.beginPath(); g.moveTo(eq, 20); g.lineTo(eq, 160); g.stroke(); g.setLineDash([]);
-  g.fillStyle = mut; g.font = "11px " + css("--font-mono"); g.textAlign = "center"; g.fillText("q = 0", eq, 15);
+  g.fillStyle = mut; g.font = "11px " + css("--font-mono"); g.textAlign = "center"; g.fillText(M.eqLabel, eq, 15);
   // spring
-  const left = x - mw / 2; const sy = 76; g.strokeStyle = css("--c-energy"); g.lineWidth = 2; g.beginPath(); g.moveTo(wallX, sy);
+  const left = x - mw / 2; const sy = 76; g.strokeStyle = css(M.springVar); g.lineWidth = 2; g.beginPath(); g.moveTo(wallX, sy);
   const n = 12, sx0 = wallX + 14, sx1 = left - 10; g.lineTo(sx0, sy);
   for (let i = 0; i < n; i++) g.lineTo(sx0 + ((sx1 - sx0) * (i + 0.5)) / n, sy + (i % 2 ? -10 : 10));
   g.lineTo(sx1, sy); g.lineTo(left, sy); g.stroke();
@@ -1085,15 +1143,15 @@ function enDrawFrame() {
   g.beginPath(); g.moveTo(wallX, dy); g.lineTo(cylX, dy); g.stroke();
   g.beginPath(); g.moveTo(cylX, dy - 11); g.lineTo(cylX + cylW, dy - 11); g.moveTo(cylX, dy + 11); g.lineTo(cylX + cylW, dy + 11); g.moveTo(cylX, dy - 11); g.lineTo(cylX, dy + 11); g.stroke();
   const pist = Math.min(cylX + cylW - 4, Math.max(cylX + 6, left - 30)); g.beginPath(); g.moveTo(pist, dy - 8); g.lineTo(pist, dy + 8); g.moveTo(pist, dy); g.lineTo(left, dy); g.stroke();
-  // mass
-  g.fillStyle = css("--l-energy"); g.globalAlpha = 0.25 + 0.75 * Math.min(1, o.EL / Math.max(E0, 1e-12)); g.fillRect(left, top, mw, bot - top); g.globalAlpha = 1;
+  // mass: opacity tracks the kinetic-energy store (L in series, C in parallel)
+  g.fillStyle = css(M.massVar); g.globalAlpha = 0.25 + 0.75 * Math.min(1, o[M.kinetic] / Math.max(E0, 1e-12)); g.fillRect(left, top, mw, bot - top); g.globalAlpha = 1;
   g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(left, top, mw, bot - top);
-  g.fillStyle = ink; g.font = "600 12px " + css("--font-body"); g.fillText("L", x, (top + bot) / 2 + 4);
+  g.fillStyle = ink; g.font = "600 12px " + css("--font-body"); g.fillText(M.massLabel, x, (top + bot) / 2 + 4);
   // velocity arrow
-  const vel = o.i; const al = Math.max(-80, Math.min(80, (-vel / (vmax / Math.sqrt(enS.v.L * enS.v.C) || 1)) * 60));
+  const vn = M.vel(o, sim, p); const al = Math.max(-80, Math.min(80, (isFinite(vn) ? vn : 0) * 60));
   if (Math.abs(al) > 3) { g.strokeStyle = ink; g.fillStyle = ink; g.beginPath(); g.moveTo(x, top - 12); g.lineTo(x + al, top - 12); g.stroke(); g.beginPath(); const sgn = Math.sign(al); g.moveTo(x + al, top - 12); g.lineTo(x + al - sgn * 7, top - 17); g.lineTo(x + al - sgn * 7, top - 7); g.fill(); }
-  g.font = "11px " + css("--font-body"); g.fillStyle = css("--c-energy"); g.textAlign = "left"; g.fillText("spring = 1/C", wallX + 8, sy - 16);
-  g.fillStyle = css("--r-energy"); g.fillText("damper = R", wallX + 8, dy + 28);
+  g.font = "11px " + css("--font-body"); g.fillStyle = css(M.springVar); g.textAlign = "left"; g.fillText(M.springLabel, wallX + 8, sy - 16);
+  g.fillStyle = css("--r-energy"); g.fillText(M.damperLabel, wallX + 8, dy + 28);
   g.fillStyle = mut; g.textAlign = "right"; g.fillText(`t = ${fmtP(enS.t)} s   v_C = ${fmtP(o.v)} V   i_L = ${fmtP(o.i)} A`, W - 10, 180);
 }
 
